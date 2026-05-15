@@ -11,19 +11,37 @@ interface Props {
   month: string
 }
 
+type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'only-extra'
+
 export default function ExpenseList({ appData, year, month }: Props) {
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
+  const [sortOption, setSortOption] = useState<SortOption>('date-desc')
   const deleteExpense = useDeleteExpense()
 
   const monthData = appData.years[year]?.[month] ?? { expenses: [] }
-  const allExpenses = [...monthData.expenses].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
+  const sortedExpenses = [...monthData.expenses].sort((a, b) => {
+    switch (sortOption) {
+      case 'date-desc':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      case 'date-asc':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      case 'amount-desc':
+        return b.amount - a.amount
+      case 'amount-asc':
+        return a.amount - b.amount
+      default:
+        return 0
+    }
+  })
 
-  const expenses = filterUserId
-    ? allExpenses.filter(e => e.paidBy === filterUserId)
-    : allExpenses;
+  let expenses = filterUserId
+    ? sortedExpenses.filter(e => e.paidBy === filterUserId)
+    : sortedExpenses;
+
+  if (sortOption === 'only-extra') {
+    expenses = expenses.filter(e => !!e.debtToUserId)
+  }
   const summary = calculateSettlements(monthData, appData.users)
   const userMap = new Map(appData.users.map((u) => [u.id, u.name]))
 
@@ -119,13 +137,37 @@ export default function ExpenseList({ appData, year, month }: Props) {
         </div>
       )}
 
+      {/* Sorting */}
+      {expenses.length > 0 && (
+        <div className="px-6 pt-4 flex justify-between items-center">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+            Despesas
+          </p>
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as SortOption)}
+            className="bg-black/5 dark:bg-white/5 border border-border rounded-md text-xs font-medium text-foreground px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer appearance-none pr-7 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:12px_12px] bg-[position:right_8px_center] bg-no-repeat"
+          >
+            <option value="date-desc" className="bg-background text-foreground">Mais recentes</option>
+            <option value="date-asc" className="bg-background text-foreground">Mais antigas</option>
+            <option value="amount-desc" className="bg-background text-foreground">Maior valor</option>
+            <option value="amount-asc" className="bg-background text-foreground">Menor valor</option>
+            <option value="only-extra" className="bg-background text-amber-500 font-bold">⚡ Somente Extras</option>
+          </select>
+        </div>
+      )}
+
       {/* Expense list */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         {expenses.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center bg-white/[0.01] rounded-2xl border border-white/5 border-dashed mx-2">
             <span className="text-4xl mb-3 opacity-50">📋</span>
-            <p className="text-sm font-medium text-foreground/80">Nenhuma despesa lançada</p>
-            <p className="text-xs text-muted-foreground mt-1.5">Use o painel ao lado para adicionar a primeira.</p>
+            <p className="text-sm font-medium text-foreground/80">
+              {sortOption === 'only-extra' ? 'Nenhum gasto extra encontrado' : 'Nenhuma despesa lançada'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              {sortOption === 'only-extra' ? 'Altere o filtro para ver outras despesas.' : 'Use o painel ao lado para adicionar a primeira.'}
+            </p>
           </div>
         ) : (
           expenses.map((expense) => {
