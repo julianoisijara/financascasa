@@ -12,6 +12,7 @@ export interface Expense {
   paidBy: string // User.id
   createdAt: string // ISO 8601
   categoryId?: string
+  debtToUserId?: string // User.id — if set, this is a personal debt (not shared). paidBy paid on behalf of debtToUserId
   updatedAt?: string // ISO 8601
   updatedBy?: string // User.id
 }

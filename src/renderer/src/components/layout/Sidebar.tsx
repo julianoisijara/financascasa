@@ -84,7 +84,7 @@ function YearGroup({
 
   const totalAmountForYear = months.reduce((sum, m) => {
     const monthExpenses = appData.years[year]?.[m]?.expenses ?? []
-    const monthTotal = monthExpenses.reduce((mSum, e) => mSum + e.amount, 0)
+    const monthTotal = monthExpenses.filter(e => !e.debtToUserId).reduce((mSum, e) => mSum + e.amount, 0)
     return sum + monthTotal
   }, 0)
 
@@ -115,7 +115,7 @@ function YearGroup({
         <div className="pb-1">
           {months.map((month) => {
             const expenses = appData.years[year]?.[month]?.expenses ?? []
-            const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0)
+            const totalAmount = expenses.filter(e => !e.debtToUserId).reduce((sum, e) => sum + e.amount, 0)
             const isSelected = selectedYear === year && selectedMonth === month
             return (
               <button

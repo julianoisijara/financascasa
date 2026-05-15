@@ -43,7 +43,7 @@ export default function ExpenseList({ appData, year, month }: Props) {
             </span>
             <span className="text-muted-foreground/30">•</span>
             <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-              {filterUserId ? 'Filtrado: ' : 'Total: '}{formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0))}
+              {filterUserId ? 'Filtrado: ' : 'Total Mensal: '}{formatCurrency(expenses.filter(e => !e.debtToUserId).reduce((sum, e) => sum + e.amount, 0))}
             </span>
             {filterUserId && (
               <button
@@ -128,16 +128,34 @@ export default function ExpenseList({ appData, year, month }: Props) {
             <p className="text-xs text-muted-foreground mt-1.5">Use o painel ao lado para adicionar a primeira.</p>
           </div>
         ) : (
-          expenses.map((expense) => (
+          expenses.map((expense) => {
+            const isDebtExpense = !!expense.debtToUserId
+            return (
             <button
               key={expense.id}
               id={`expense-${expense.id}`}
               onClick={() => setSelectedExpenseId(expense.id)}
-              className="w-full text-left card px-5 py-4 hover:bg-white/[0.04] transition-all duration-300 hover:border-primary/30 group animate-slide-in hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+              className={cn(
+                "w-full text-left card px-5 py-4 transition-all duration-300 group animate-slide-in hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)]",
+                isDebtExpense
+                  ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-400/50 hover:bg-amber-500/10"
+                  : "hover:bg-white/[0.04] hover:border-primary/30"
+              )}
             >
+              {isDebtExpense && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/20">⚡ Valor Extra</span>
+                  <span className="text-[10px] text-amber-300/70">
+                    {userMap.get(expense.debtToUserId!)} deve a {userMap.get(expense.paidBy)}
+                  </span>
+                </div>
+              )}
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-semibold text-foreground/90 truncate group-hover:text-primary transition-colors">{expense.name}</p>
+                  <p className={cn(
+                    "text-base font-semibold truncate transition-colors",
+                    isDebtExpense ? "text-amber-300/90 group-hover:text-amber-200" : "text-foreground/90 group-hover:text-primary"
+                  )}>{expense.name}</p>
                   {expense.description && (
                     <p className="text-sm text-muted-foreground truncate mt-1">{expense.description}</p>
                   )}
@@ -155,14 +173,18 @@ export default function ExpenseList({ appData, year, month }: Props) {
                   </div>
                 </div>
                 <div className="flex-shrink-0 text-right flex flex-col items-end">
-                  <p className="text-lg font-bold text-primary drop-shadow-sm">{formatCurrency(expense.amount)}</p>
+                  <p className={cn(
+                    "text-lg font-bold drop-shadow-sm",
+                    isDebtExpense ? "text-amber-400" : "text-primary"
+                  )}>{formatCurrency(expense.amount)}</p>
                   <p className="text-[11px] font-medium text-muted-foreground mt-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                     Detalhes →
                   </p>
                 </div>
               </div>
             </button>
-          ))
+            )
+          })
         )}
       </div>
 

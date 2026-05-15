@@ -18,6 +18,8 @@ export default function ExpenseForm({ appData, year, month }: Props) {
   const [amountRaw, setAmountRaw] = useState('')
   const [paidBy, setPaidBy] = useState(appData.users[0]?.id ?? '')
   const [categoryId, setCategoryId] = useState('')
+  const [isDebt, setIsDebt] = useState(false)
+  const [debtToUserId, setDebtToUserId] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
@@ -47,14 +49,18 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     const amount = parseCurrencyInput(amountRaw)
     if (amount <= 0) return setError('Insira um valor válido.')
     if (!paidBy) return setError('Selecione o responsável pelo pagamento.')
+    if (isDebt && !debtToUserId) return setError('Selecione quem deve pagar essa despesa.')
+    if (isDebt && debtToUserId === paidBy) return setError('O devedor não pode ser a mesma pessoa que pagou.')
 
-    await addExpense.mutateAsync({ year, month, expense: { name: name.trim(), description: description.trim(), amount, paidBy, categoryId: categoryId || undefined } })
+    await addExpense.mutateAsync({ year, month, expense: { name: name.trim(), description: description.trim(), amount, paidBy, categoryId: categoryId || undefined, debtToUserId: isDebt ? debtToUserId : undefined } })
 
     // Reset
     setName('')
     setDescription('')
     setAmountRaw('')
     setCategoryId('')
+    setIsDebt(false)
+    setDebtToUserId('')
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2500)
   }
@@ -146,6 +152,34 @@ export default function ExpenseForm({ appData, year, month }: Props) {
               <option key={user.id} value={user.id}>{user.name}</option>
             ))}
           </select>
+        </div>
+
+        {/* Debt toggle */}
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 space-y-3">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isDebt}
+              onChange={(e) => { setIsDebt(e.target.checked); if (!e.target.checked) setDebtToUserId('') }}
+              disabled={addExpense.isPending}
+              className="h-4 w-4 rounded border-amber-500/40 text-amber-500 focus:ring-amber-500/50 cursor-pointer accent-amber-500"
+            />
+            <span className="text-xs font-semibold text-amber-300">Despesa a ser paga por</span>
+          </label>
+          {isDebt && (
+            <select
+              id="expense-debtto"
+              className="input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10 border-amber-500/30"
+              value={debtToUserId}
+              onChange={(e) => setDebtToUserId(e.target.value)}
+              disabled={addExpense.isPending}
+            >
+              <option value="">Selecione o devedor...</option>
+              {appData.users.filter(u => u.id !== paidBy).map((user) => (
+                <option key={user.id} value={user.id}>{user.name}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Error */}

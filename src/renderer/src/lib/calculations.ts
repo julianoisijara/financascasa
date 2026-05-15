@@ -4,16 +4,20 @@ export function calculateSettlements(monthData: MonthData, users: User[]): Month
   // 1. Map userId → User for quick lookup
   const userMap = new Map(users.map((u) => [u.id, u]))
 
-  // 2. Aggregate payments per userId (only participants who paid at least once)
+  // Separate shared expenses from personal debts
+  const sharedExpenses = monthData.expenses.filter((e) => !e.debtToUserId)
+  const debtExpenses = monthData.expenses.filter((e) => !!e.debtToUserId)
+
+  // 2. Aggregate payments per userId (only shared expenses count towards fair share)
   const paid = new Map<string, number>()
-  for (const expense of monthData.expenses) {
+  for (const expense of sharedExpenses) {
     paid.set(expense.paidBy, (paid.get(expense.paidBy) ?? 0) + expense.amount)
   }
 
   const participantIds = Array.from(paid.keys())
   const participantCount = participantIds.length
 
-  if (participantCount === 0) {
+  if (participantCount === 0 && debtExpenses.length === 0) {
     return {
       totalAmount: 0,
       participantCount: 0,
@@ -23,11 +27,11 @@ export function calculateSettlements(monthData: MonthData, users: User[]): Month
     }
   }
 
-  // 3. Calculate total and fair share
-  const totalAmount = Array.from(paid.values()).reduce((sum, v) => sum + v, 0)
-  const fairShare = Math.round(totalAmount / participantCount)
+  // 3. Calculate total and fair share (shared expenses only)
+  const totalShared = Array.from(paid.values()).reduce((sum, v) => sum + v, 0)
+  const fairShare = participantCount > 0 ? Math.round(totalShared / participantCount) : 0
 
-  // 4. Build participant summaries with balance
+  // 4. Build participant summaries with balance (shared expenses)
   const participants: ParticipantSummary[] = participantIds.map((userId) => {
     const userPaid = paid.get(userId) ?? 0
     const balance = userPaid - fairShare
@@ -41,11 +45,9 @@ export function calculateSettlements(monthData: MonthData, users: User[]): Month
   })
 
   // 5. Greedy minimum-transfer settlement algorithm
-  // Debtors: balance < 0 (paid less than fair share)
-  // Creditors: balance > 0 (paid more than fair share)
   const debtors = participants
     .filter((p) => p.balance < 0)
-    .map((p) => ({ name: p.userName, amount: -p.balance })) // amount is positive
+    .map((p) => ({ name: p.userName, amount: -p.balance }))
   const creditors = participants
     .filter((p) => p.balance > 0)
     .map((p) => ({ name: p.userName, amount: p.balance }))
@@ -73,6 +75,20 @@ export function calculateSettlements(monthData: MonthData, users: User[]): Month
     if (debtor.amount === 0) i++
     if (creditor.amount === 0) j++
   }
+
+  // 6. Add personal debt settlements (debtToUserId owes paidBy)
+  for (const expense of debtExpenses) {
+    const debtorName = userMap.get(expense.debtToUserId!)?.name ?? 'Desconhecido'
+    const creditorName = userMap.get(expense.paidBy)?.name ?? 'Desconhecido'
+    settlements.push({
+      from: debtorName,
+      to: creditorName,
+      amount: expense.amount
+    })
+  }
+
+  // Total amount includes everything for display
+  const totalAmount = totalShared + debtExpenses.reduce((sum, e) => sum + e.amount, 0)
 
   return {
     totalAmount,
