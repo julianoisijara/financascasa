@@ -57,7 +57,7 @@ export default function ExpenseList({ appData, year, month }: Props) {
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
             <span>
-              {filterUserId ? `${expenses.length} de ${allExpenses.length}` : expenses.length} despesa{expenses.length !== 1 ? 's' : ''}
+              {filterUserId ? `${expenses.length} de despesas filtradas` : `${expenses.length} despesa${expenses.length !== 1 ? 's' : ''}`}
             </span>
             <span className="text-muted-foreground/30">•</span>
             <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">

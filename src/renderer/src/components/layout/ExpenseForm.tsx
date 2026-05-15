@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AppData } from '@shared/schema'
-import { maskCurrencyInput, parseCurrencyInput } from '../../lib/utils'
+import { maskCurrencyInput, parseCurrencyInput, cn } from '../../lib/utils'
 import { useAddExpense, useAddCategory } from '../../hooks/useFinanceData'
 import AddCategoryModal from '../modals/AddCategoryModal'
 
@@ -23,6 +23,7 @@ export default function ExpenseForm({ appData, year, month }: Props) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
+  const [touched, setTouched] = useState(false)
 
   const categories = appData.categories ?? []
 
@@ -32,20 +33,24 @@ export default function ExpenseForm({ appData, year, month }: Props) {
       setShowAddCategory(true)
     } else {
       setCategoryId(val)
+      setError('')
     }
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const masked = maskCurrencyInput(e.target.value)
     setAmountRaw(masked)
+    setError('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setTouched(true)
     setError('')
     setSuccess(false)
 
     if (!name.trim()) return setError('O nome da despesa é obrigatório.')
+    if (!categoryId) return setError('Selecione uma categoria.')
     const amount = parseCurrencyInput(amountRaw)
     if (amount <= 0) return setError('Insira um valor válido.')
     if (!paidBy) return setError('Selecione o responsável pelo pagamento.')
@@ -61,8 +66,20 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     setCategoryId('')
     setIsDebt(false)
     setDebtToUserId('')
+    setTouched(false)
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2500)
+  }
+
+  const handleClear = () => {
+    setName('')
+    setDescription('')
+    setAmountRaw('')
+    setCategoryId('')
+    setIsDebt(false)
+    setDebtToUserId('')
+    setError('')
+    setTouched(false)
   }
 
   return (
@@ -80,11 +97,17 @@ export default function ExpenseForm({ appData, year, month }: Props) {
           <label className="label" htmlFor="expense-name">Nome da despesa</label>
           <input
             id="expense-name"
-            className="input-field"
+            className={cn(
+              "input-field",
+              touched && !name.trim() && "border-destructive ring-1 ring-destructive/50"
+            )}
             type="text"
             placeholder="Ex: Mercado, Aluguel..."
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value)
+              setError('')
+            }}
             disabled={addExpense.isPending}
           />
         </div>
@@ -104,10 +127,13 @@ export default function ExpenseForm({ appData, year, month }: Props) {
 
         {/* Category */}
         <div>
-          <label className="label" htmlFor="expense-category">Categoria <span className="font-normal opacity-60">(opcional)</span></label>
+          <label className="label" htmlFor="expense-category">Categoria</label>
           <select
             id="expense-category"
-            className="input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10"
+            className={cn(
+              "input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10",
+              touched && !categoryId && "border-destructive ring-1 ring-destructive/50"
+            )}
             value={categoryId}
             onChange={handleCategoryChange}
             disabled={addExpense.isPending || addCategory.isPending}
@@ -127,7 +153,10 @@ export default function ExpenseForm({ appData, year, month }: Props) {
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold group-focus-within:text-primary transition-colors">R$</span>
             <input
               id="expense-amount"
-              className="input-field pl-10 font-medium text-lg tracking-wide"
+              className={cn(
+                "input-field pl-10 font-medium text-lg tracking-wide",
+                touched && (!amountRaw || parseCurrencyInput(amountRaw) <= 0) && "border-destructive ring-1 ring-destructive/50"
+              )}
               type="text"
               inputMode="numeric"
               placeholder="0,00"
@@ -208,6 +237,15 @@ export default function ExpenseForm({ appData, year, month }: Props) {
           ) : (
             '+ Lançar Despesa'
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleClear}
+          className="btn-secondary w-full"
+          disabled={addExpense.isPending}
+        >
+          Limpar
         </button>
       </form>
 
