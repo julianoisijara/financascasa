@@ -1,0 +1,186 @@
+import { useState } from 'react'
+import type { AppData } from '@shared/schema'
+import { formatCurrency, getMonthName, cn } from '../../lib/utils'
+import { useDeleteExpense } from '../../hooks/useFinanceData'
+import { calculateSettlements } from '../../lib/calculations'
+import ExpenseDetailModal from '../modals/ExpenseDetailModal'
+
+interface Props {
+  appData: AppData
+  year: string
+  month: string
+}
+
+export default function ExpenseList({ appData, year, month }: Props) {
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
+  const [filterUserId, setFilterUserId] = useState<string | null>(null)
+  const deleteExpense = useDeleteExpense()
+
+  const monthData = appData.years[year]?.[month] ?? { expenses: [] }
+  const allExpenses = [...monthData.expenses].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+
+  const expenses = filterUserId
+    ? allExpenses.filter(e => e.paidBy === filterUserId)
+    : allExpenses;
+  const summary = calculateSettlements(monthData, appData.users)
+  const userMap = new Map(appData.users.map((u) => [u.id, u.name]))
+
+  const selectedExpense = expenses.find(e => e.id === selectedExpenseId) || null
+
+  return (
+    <div className="flex flex-col flex-1 min-w-0 border-r border-white/5 bg-transparent backdrop-blur-sm">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-white/[0.01] drag-region">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">
+            {getMonthName(month)} <span className="text-muted-foreground font-normal">{year}</span>
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+            <span>
+              {filterUserId ? `${expenses.length} de ${allExpenses.length}` : expenses.length} despesa{expenses.length !== 1 ? 's' : ''}
+            </span>
+            <span className="text-muted-foreground/30">•</span>
+            <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              {filterUserId ? 'Filtrado: ' : 'Total: '}{formatCurrency(expenses.reduce((sum, e) => sum + e.amount, 0))}
+            </span>
+            {filterUserId && (
+              <button
+                onClick={() => setFilterUserId(null)}
+                className="text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground px-2 py-0.5 rounded border border-white/5 transition-colors ml-1"
+              >
+                Limpar Filtro ✕
+              </button>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Settlement summary */}
+      {summary.settlements.length > 0 && (
+        <div className="mx-6 mt-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20 px-5 py-4 shadow-[0_0_30px_rgba(16,185,129,0.05)] relative overflow-hidden">
+          <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Finanças
+          </p>
+          <div className="space-y-2">
+            {summary.settlements.map((s, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm text-foreground/90">
+                <span className="font-semibold text-foreground bg-white/5 px-2 py-0.5 rounded-md">{s.from}</span>
+                <span className="text-muted-foreground text-xs">deve</span>
+                <span className="font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">{formatCurrency(s.amount)}</span>
+                <span className="text-muted-foreground text-xs">para</span>
+                <span className="font-semibold text-foreground bg-white/5 px-2 py-0.5 rounded-md">{s.to}</span>
+              </div>
+            ))}
+          </div>
+          <div className="pt-3 border-t border-emerald-500/10 mt-4 flex items-center justify-between text-xs text-emerald-100/50">
+            <span>Cota ideal: <strong className="text-emerald-100 font-medium">{formatCurrency(summary.fairShare)}</strong></span>
+            <span>{summary.participantCount} participante{summary.participantCount !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Per-person breakdown */}
+      {summary.participants.length > 0 && (
+        <div className="mx-6 mt-4 grid grid-cols-2 gap-3">
+          {summary.participants.map((p) => (
+            <button
+              key={p.userId}
+              onClick={() => setFilterUserId(filterUserId === p.userId ? null : p.userId)}
+              className={cn(
+                "rounded-xl border backdrop-blur-md px-4 py-3 flex items-center justify-between gap-3 transition-all duration-300 hover:scale-[1.02]",
+                filterUserId === p.userId
+                  ? "bg-primary/20 border-primary shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+                  : "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"
+              )}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={cn(
+                  "h-8 w-8 flex-shrink-0 rounded-full border flex items-center justify-center text-sm font-bold transition-colors",
+                  filterUserId === p.userId ? "bg-primary text-primary-foreground border-primary" : "bg-gradient-to-br from-primary/30 to-primary/5 border-primary/20 text-primary"
+                )}>
+                  {p.userName.charAt(0).toUpperCase()}
+                </div>
+                <span className={cn(
+                  "text-sm font-medium truncate",
+                  filterUserId === p.userId ? "text-foreground" : "text-foreground/90"
+                )}>{p.userName}</span>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid)}</div>
+                <div className={`text-xs font-medium mt-0.5 ${p.balance >= 0 ? 'text-emerald-400' : 'text-red-400/90'}`}>
+                  {p.balance >= 0 ? '+' : ''}{formatCurrency(p.balance)}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Expense list */}
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+        {expenses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-center bg-white/[0.01] rounded-2xl border border-white/5 border-dashed mx-2">
+            <span className="text-4xl mb-3 opacity-50">📋</span>
+            <p className="text-sm font-medium text-foreground/80">Nenhuma despesa lançada</p>
+            <p className="text-xs text-muted-foreground mt-1.5">Use o painel ao lado para adicionar a primeira.</p>
+          </div>
+        ) : (
+          expenses.map((expense) => (
+            <button
+              key={expense.id}
+              id={`expense-${expense.id}`}
+              onClick={() => setSelectedExpenseId(expense.id)}
+              className="w-full text-left card px-5 py-4 hover:bg-white/[0.04] transition-all duration-300 hover:border-primary/30 group animate-slide-in hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold text-foreground/90 truncate group-hover:text-primary transition-colors">{expense.name}</p>
+                  {expense.description && (
+                    <p className="text-sm text-muted-foreground truncate mt-1">{expense.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 bg-white/5 px-2 py-0.5 rounded">Pago por</span>
+                    <span className="text-xs font-medium text-foreground/80">{userMap.get(expense.paidBy) ?? '?'}</span>
+                    {expense.categoryId && (
+                      <>
+                        <span className="text-muted-foreground/30 text-[10px]">•</span>
+                        <span className="text-xs font-medium text-primary/80">
+                          {appData.categories?.find(c => c.id === expense.categoryId)?.name}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-shrink-0 text-right flex flex-col items-end">
+                  <p className="text-lg font-bold text-primary drop-shadow-sm">{formatCurrency(expense.amount)}</p>
+                  <p className="text-[11px] font-medium text-muted-foreground mt-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                    Detalhes →
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+
+      {selectedExpense && (
+        <ExpenseDetailModal
+          expense={selectedExpense}
+          users={appData.users}
+          categories={appData.categories ?? []}
+          year={year}
+          month={month}
+          onClose={() => setSelectedExpenseId(null)}
+          onDelete={async () => {
+            await deleteExpense.mutateAsync({ year, month, expenseId: selectedExpense.id })
+            setSelectedExpenseId(null)
+          }}
+          isDeleting={deleteExpense.isPending}
+        />
+      )}
+    </div>
+  )
+}
