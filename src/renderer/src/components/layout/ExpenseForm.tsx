@@ -13,7 +13,6 @@ interface Props {
 export default function ExpenseForm({ appData, year, month }: Props) {
   const addExpense = useAddExpense()
   const addCategory = useAddCategory()
-  const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [amountRaw, setAmountRaw] = useState('')
   const [paidBy, setPaidBy] = useState(appData.users[0]?.id ?? '')
@@ -48,8 +47,6 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     setTouched(true)
     setError('')
     setSuccess(false)
-
-    if (!name.trim()) return setError('O nome da despesa é obrigatório.')
     if (!categoryId) return setError('Selecione uma categoria.')
     const amount = parseCurrencyInput(amountRaw)
     if (amount <= 0) return setError('Insira um valor válido.')
@@ -57,10 +54,9 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     if (isDebt && !debtToUserId) return setError('Selecione quem deve pagar essa despesa.')
     if (isDebt && debtToUserId === paidBy) return setError('O devedor não pode ser a mesma pessoa que pagou.')
 
-    await addExpense.mutateAsync({ year, month, expense: { name: name.trim(), description: description.trim(), amount, paidBy, categoryId: categoryId || undefined, debtToUserId: isDebt ? debtToUserId : undefined } })
+    await addExpense.mutateAsync({ year, month, expense: { description: description.trim(), amount, paidBy, categoryId, debtToUserId: isDebt ? debtToUserId : undefined } })
 
     // Reset
-    setName('')
     setDescription('')
     setAmountRaw('')
     setCategoryId('')
@@ -72,7 +68,6 @@ export default function ExpenseForm({ appData, year, month }: Props) {
   }
 
   const handleClear = () => {
-    setName('')
     setDescription('')
     setAmountRaw('')
     setCategoryId('')
@@ -92,39 +87,6 @@ export default function ExpenseForm({ appData, year, month }: Props) {
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-        {/* Name */}
-        <div>
-          <label className="label" htmlFor="expense-name">Nome da despesa</label>
-          <input
-            id="expense-name"
-            className={cn(
-              "input-field",
-              touched && !name.trim() && "border-destructive ring-1 ring-destructive/50"
-            )}
-            type="text"
-            placeholder="Ex: Mercado, Aluguel..."
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value)
-              setError('')
-            }}
-            disabled={addExpense.isPending}
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="label" htmlFor="expense-desc">Descrição <span className="font-normal opacity-60">(opcional)</span></label>
-          <textarea
-            id="expense-desc"
-            className="input-field resize-none h-20"
-            placeholder="Detalhes adicionais..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={addExpense.isPending}
-          />
-        </div>
-
         {/* Category */}
         <div>
           <label className="label" htmlFor="expense-category">Categoria</label>
@@ -144,6 +106,19 @@ export default function ExpenseForm({ appData, year, month }: Props) {
             ))}
             <option value="new" className="font-bold text-primary">+ Nova categoria...</option>
           </select>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="label" htmlFor="expense-desc">Descrição <span className="font-normal opacity-60">(opcional)</span></label>
+          <textarea
+            id="expense-desc"
+            className="input-field resize-none h-20"
+            placeholder="Detalhes adicionais..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={addExpense.isPending}
+          />
         </div>
 
         {/* Amount */}

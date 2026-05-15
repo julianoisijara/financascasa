@@ -210,21 +210,15 @@ export default function ExpenseList({ appData, year, month }: Props) {
                   <p className={cn(
                     "text-base font-semibold truncate transition-colors",
                     isDebtExpense ? "text-amber-300/90 group-hover:text-amber-200" : "text-foreground/90 group-hover:text-primary"
-                  )}>{expense.name}</p>
+                  )}>
+                    {appData.categories?.find(c => c.id === expense.categoryId)?.name ?? expense.name ?? 'Sem categoria'}
+                  </p>
                   {expense.description && (
                     <p className="text-sm text-muted-foreground truncate mt-1">{expense.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-2.5">
                     <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 bg-white/5 px-2 py-0.5 rounded">Pago por</span>
                     <span className="text-xs font-medium text-foreground/80">{userMap.get(expense.paidBy) ?? '?'}</span>
-                    {expense.categoryId && (
-                      <>
-                        <span className="text-muted-foreground/30 text-[10px]">•</span>
-                        <span className="text-xs font-medium text-primary/80">
-                          {appData.categories?.find(c => c.id === expense.categoryId)?.name}
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
                 <div className="flex-shrink-0 text-right flex flex-col items-end">

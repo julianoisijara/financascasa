@@ -6,12 +6,12 @@ export interface User {
 
 export interface Expense {
   id: string
-  name: string
+  name?: string
   description: string
   amount: number // stored in cents to avoid float issues (e.g., R$ 100,50 = 10050)
   paidBy: string // User.id
   createdAt: string // ISO 8601
-  categoryId?: string
+  categoryId: string
   debtToUserId?: string // User.id — if set, this is a personal debt (not shared). paidBy paid on behalf of debtToUserId
   updatedAt?: string // ISO 8601
   updatedBy?: string // User.id
