@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Expense, User } from '@shared/schema'
-import { formatCurrency, maskCurrencyInput, parseCurrencyInput } from '../../lib/utils'
+import { formatCurrency, maskCurrencyInput, parseCurrencyInput, cn } from '../../lib/utils'
 import { useEditExpense, useAddCategory } from '../../hooks/useFinanceData'
 import AddCategoryModal from './AddCategoryModal'
 
@@ -50,6 +50,8 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
   }) : null
   const updater = expense.updatedBy ? users.find((u) => u.id === expense.updatedBy) : null
   const category = categories.find(c => c.id === expense.categoryId)
+  const isDebtExpense = !!expense.debtToUserId
+  const debtor = isDebtExpense ? users.find(u => u.id === expense.debtToUserId) : null
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAmountRaw(maskCurrencyInput(e.target.value))
@@ -204,10 +206,27 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
         ) : (
           <>
             {/* Amount */}
-            <div className="rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-center relative group">
+            <div className={cn(
+              "rounded-lg border px-4 py-3 text-center relative group",
+              isDebtExpense ? "bg-amber-500/10 border-amber-500/20" : "bg-primary/10 border-primary/20"
+            )}>
+              {isDebtExpense && (
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">⚡ Valor Extra</p>
+              )}
               <p className="text-xs text-muted-foreground mb-1">Valor pago</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(expense.amount)}</p>
+              <p className={cn(
+                "text-2xl font-bold",
+                isDebtExpense ? "text-amber-400" : "text-primary"
+              )}>{formatCurrency(expense.amount)}</p>
             </div>
+
+            {isDebtExpense && debtor && (
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-center">
+                <p className="text-xs text-amber-200/80">
+                  Esta despesa será paga integralmente por <strong className="text-amber-400">{debtor.name}</strong> para <strong className="text-amber-400">{payer?.name}</strong>.
+                </p>
+              </div>
+            )}
 
             {/* Details */}
             <div className="space-y-3 bg-black/5 dark:bg-black/20 rounded-xl p-4 border border-border">
