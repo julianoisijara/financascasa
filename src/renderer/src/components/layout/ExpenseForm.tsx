@@ -15,7 +15,7 @@ export default function ExpenseForm({ appData, year, month }: Props) {
   const addCategory = useAddCategory()
   const [description, setDescription] = useState('')
   const [amountRaw, setAmountRaw] = useState('')
-  const [paidBy, setPaidBy] = useState(appData.users[0]?.id ?? '')
+  const [paidBy, setPaidBy] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [isDebt, setIsDebt] = useState(false)
   const [debtToUserId, setDebtToUserId] = useState('')
@@ -60,6 +60,7 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     setDescription('')
     setAmountRaw('')
     setCategoryId('')
+    setPaidBy('')
     setIsDebt(false)
     setDebtToUserId('')
     setTouched(false)
@@ -71,6 +72,7 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     setDescription('')
     setAmountRaw('')
     setCategoryId('')
+    setPaidBy('')
     setIsDebt(false)
     setDebtToUserId('')
     setError('')
@@ -147,11 +149,18 @@ export default function ExpenseForm({ appData, year, month }: Props) {
           <label className="label" htmlFor="expense-paidby">Pago por</label>
           <select
             id="expense-paidby"
-            className="input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10"
+            className={cn(
+              "input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10",
+              touched && !paidBy && "border-destructive ring-1 ring-destructive/50"
+            )}
             value={paidBy}
-            onChange={(e) => setPaidBy(e.target.value)}
+            onChange={(e) => {
+              setPaidBy(e.target.value)
+              setError('')
+            }}
             disabled={addExpense.isPending}
           >
+            <option value="">Selecione quem pagou...</option>
             {appData.users.map((user) => (
               <option key={user.id} value={user.id}>{user.name}</option>
             ))}
