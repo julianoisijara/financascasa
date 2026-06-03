@@ -18,6 +18,13 @@ declare global {
       onMenuLogout: (callback: () => void) => void
       onMenuOpenUsers: (callback: () => void) => void
       onMenuOpenYears: (callback: () => void) => void
+      onMenuOpenSettings: (callback: () => void) => void
+      // Settings
+      getDataPath: () => Promise<{ success: boolean; path: string }>
+      getDefaultDataDir: () => Promise<{ success: boolean; path: string }>
+      chooseDataDir: () => Promise<{ success: boolean; canceled?: boolean; path?: string }>
+      setDataDir: (dir: string) => Promise<{ success: boolean; path?: string; error?: string }>
+      resetDataDir: () => Promise<{ success: boolean; path?: string }>
     }
   }
 }

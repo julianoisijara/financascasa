@@ -4,12 +4,15 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipcHandlers'
 
+// Force the app name to be "Menu" so the macOS application menu displays as "Menu"
+app.name = 'Menu'
+
 let mainWindow: BrowserWindow | null = null
 
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: 'Cadastro',
+      label: 'Menu',
       submenu: [
         {
           label: 'Usuários...',
@@ -20,6 +23,12 @@ function buildMenu(): void {
           label: 'Anos...',
           accelerator: 'CmdOrCtrl+Y',
           click: () => mainWindow?.webContents.send('menu:open-years')
+        },
+        { type: 'separator' },
+        {
+          label: 'Configurações...',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => mainWindow?.webContents.send('menu:open-settings')
         }
       ]
     },
@@ -27,7 +36,7 @@ function buildMenu(): void {
     ...(process.platform === 'darwin'
       ? [
           {
-            label: app.name,
+            label: 'Menu',
             submenu: [
               { role: 'about' as const },
               { type: 'separator' as const },

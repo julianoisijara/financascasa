@@ -9,9 +9,11 @@ interface Props {
   selectedMonth: string
   onSelectYear: (y: string) => void
   onSelectMonth: (m: string) => void
+  view: 'expenses' | 'dashboard' | 'settings'
+  onViewChange: (v: 'expenses' | 'dashboard' | 'settings') => void
 }
 
-export default function Sidebar({ appData, selectedYear, selectedMonth, onSelectYear, onSelectMonth }: Props) {
+export default function Sidebar({ appData, selectedYear, selectedMonth, onSelectYear, onSelectMonth, view, onViewChange }: Props) {
   const years = Object.keys(appData.years).sort((a, b) => Number(b) - Number(a))
   const { theme, toggleTheme } = useTheme()
 
@@ -40,6 +42,22 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
         </div>
       </div>
 
+      {/* Dashboard button */}
+      <div className="px-3 pt-3 no-drag-region">
+        <button
+          onClick={() => onViewChange('dashboard')}
+          className={cn(
+            'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+            view === 'dashboard'
+              ? 'bg-primary/15 text-primary border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border border-transparent'
+          )}
+        >
+          <span className="text-base">📊</span>
+          <span>Dashboard</span>
+        </button>
+      </div>
+
       {/* Year/Month selector */}
       <nav className="flex-1 overflow-y-auto py-3 space-y-1">
         {years.map((year) => (
@@ -51,6 +69,8 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
             appData={appData}
             onSelectYear={onSelectYear}
             onSelectMonth={onSelectMonth}
+            view={view}
+            onViewChange={onViewChange}
           />
         ))}
       </nav>
@@ -72,12 +92,28 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
           )}
         </div>
       </div>
+
+      {/* Settings button */}
+      <div className="border-t border-white/5 px-3 py-3 no-drag-region">
+        <button
+          onClick={() => onViewChange('settings')}
+          className={cn(
+            'w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
+            view === 'settings'
+              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.1)]'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/5 border border-transparent'
+          )}
+        >
+          <span className="text-base">⚙️</span>
+          <span>Configurações</span>
+        </button>
+      </div>
     </aside>
   )
 }
 
 function YearGroup({
-  year, selectedYear, selectedMonth, appData, onSelectYear, onSelectMonth
+  year, selectedYear, selectedMonth, appData, onSelectYear, onSelectMonth, view, onViewChange
 }: Props & { year: string }) {
   const [open, setOpen] = useState(year === selectedYear)
   const months = Object.keys(appData.years[year] ?? {}).sort()
@@ -94,12 +130,14 @@ function YearGroup({
         id={`year-${year}`}
         className={cn(
           'w-full flex items-center justify-between px-4 py-2 text-sm font-semibold transition-colors',
-          selectedYear === year ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          selectedYear === year && view === 'expenses' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
         )}
         onClick={() => {
           setOpen(!open)
           onSelectYear(year)
-          if (!open && months.length > 0) onSelectMonth(months[0])
+          if (!open && months.length > 0) {
+            onSelectMonth(months[0])
+          }
         }}
       >
         <span>{year}</span>
@@ -116,12 +154,12 @@ function YearGroup({
           {months.map((month) => {
             const expenses = appData.years[year]?.[month]?.expenses ?? []
             const totalAmount = expenses.filter(e => !e.debtToUserId).reduce((sum, e) => sum + e.amount, 0)
-            const isSelected = selectedYear === year && selectedMonth === month
+            const isSelected = selectedYear === year && selectedMonth === month && view === 'expenses'
             return (
               <button
                 key={month}
                 id={`month-${year}-${month}`}
-                onClick={() => { onSelectYear(year); onSelectMonth(month) }}
+                onClick={() => { onSelectYear(year); onSelectMonth(month); onViewChange('expenses') }}
                 className={cn(
                   'w-full flex items-center justify-between px-6 py-1.5 text-xs transition-all duration-150',
                   isSelected

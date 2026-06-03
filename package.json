@@ -1,10 +1,10 @@
 {
-  "name": ".",
+  "name": "programafinancas",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "Programa de finanças para controle financeiro",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Juliano Isijara",
+  "homepage": "",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

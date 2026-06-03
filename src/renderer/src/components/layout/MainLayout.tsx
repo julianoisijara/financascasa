@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { AppData } from '@shared/schema'
 import Sidebar from './Sidebar'
 import ExpenseList from './ExpenseList'
 import ExpenseForm from './ExpenseForm'
+import Dashboard from './Dashboard'
+import Settings from './Settings'
 
 interface Props {
   appData: AppData
@@ -17,6 +19,13 @@ export default function MainLayout({ appData }: Props) {
 
   const [selectedYear, setSelectedYear] = useState(defaultYear)
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
+  const [view, setView] = useState<'expenses' | 'dashboard' | 'settings'>('expenses')
+
+  useEffect(() => {
+    if (window.electronAPI?.onMenuOpenSettings) {
+      window.electronAPI.onMenuOpenSettings(() => setView('settings'))
+    }
+  }, [])
 
   return (
     <div className="flex h-full bg-background overflow-hidden">
@@ -26,22 +35,32 @@ export default function MainLayout({ appData }: Props) {
         selectedYear={selectedYear}
         selectedMonth={selectedMonth}
         onSelectYear={setSelectedYear}
-        onSelectMonth={setSelectedMonth}
+        onSelectMonth={(m) => { setSelectedMonth(m); setView('expenses') }}
+        view={view}
+        onViewChange={setView}
       />
 
-      {/* Column 2 — Expense list + settlements */}
-      <ExpenseList
-        appData={appData}
-        year={selectedYear}
-        month={selectedMonth}
-      />
+      {view === 'dashboard' ? (
+        <Dashboard appData={appData} />
+      ) : view === 'settings' ? (
+        <Settings />
+      ) : (
+        <>
+          {/* Column 2 — Expense list + settlements */}
+          <ExpenseList
+            appData={appData}
+            year={selectedYear}
+            month={selectedMonth}
+          />
 
-      {/* Column 3 — Add expense form */}
-      <ExpenseForm
-        appData={appData}
-        year={selectedYear}
-        month={selectedMonth}
-      />
+          {/* Column 3 — Add expense form */}
+          <ExpenseForm
+            appData={appData}
+            year={selectedYear}
+            month={selectedMonth}
+          />
+        </>
+      )}
     </div>
   )
 }

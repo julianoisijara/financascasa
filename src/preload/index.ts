@@ -19,5 +19,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMenuLogin: (callback: () => void) => ipcRenderer.on('menu:login', () => callback()),
   onMenuLogout: (callback: () => void) => ipcRenderer.on('menu:logout', () => callback()),
   onMenuOpenUsers: (callback: () => void) => ipcRenderer.on('menu:open-users', () => callback()),
-  onMenuOpenYears: (callback: () => void) => ipcRenderer.on('menu:open-years', () => callback())
+  onMenuOpenYears: (callback: () => void) => ipcRenderer.on('menu:open-years', () => callback()),
+  onMenuOpenSettings: (callback: () => void) => ipcRenderer.on('menu:open-settings', () => callback()),
+
+  // Settings
+  getDataPath: () => ipcRenderer.invoke('settings:getDataPath'),
+  getDefaultDataDir: () => ipcRenderer.invoke('settings:getDefaultDataDir'),
+  chooseDataDir: () => ipcRenderer.invoke('settings:chooseDataDir'),
+  setDataDir: (dir: string) => ipcRenderer.invoke('settings:setDataDir', dir),
+  resetDataDir: () => ipcRenderer.invoke('settings:resetDataDir')
 })
