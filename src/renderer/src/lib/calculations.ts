@@ -34,13 +34,13 @@ export function calculateSettlements(monthData: MonthData, users: User[]): Month
   // 4. Calculate Net Balances per user
   // We start with (What they paid for shared) - (Fair share)
   const netBalances = new Map<string, number>()
-  
+
   // Initialize with users who participated in shared expenses or all users if needed
   // To be safe, let's consider all users mentioned in any expense
   const allInvolvedUserIds = new Set([
     ...participantIds,
-    ...debtExpenses.map(e => e.paidBy),
-    ...debtExpenses.map(e => e.debtToUserId!)
+    ...debtExpenses.map((e) => e.paidBy),
+    ...debtExpenses.map((e) => e.debtToUserId!)
   ])
 
   for (const userId of allInvolvedUserIds) {
@@ -55,21 +55,25 @@ export function calculateSettlements(monthData: MonthData, users: User[]): Month
   for (const expense of debtExpenses) {
     const creditorId = expense.paidBy
     const debtorId = expense.debtToUserId!
-    
+
     netBalances.set(creditorId, (netBalances.get(creditorId) ?? 0) + expense.amount)
     netBalances.set(debtorId, (netBalances.get(debtorId) ?? 0) - expense.amount)
   }
 
   // 6. Build participant summaries for display
-  const participants: ParticipantSummary[] = Array.from(netBalances.entries()).map(([userId, balance]) => {
-    return {
-      userId,
-      userName: userMap.get(userId)?.name ?? 'Desconhecido',
-      paid: (paid.get(userId) ?? 0) + debtExpenses.filter(e => e.paidBy === userId).reduce((s, e) => s + e.amount, 0),
-      fairShare: participantIds.includes(userId) ? fairShare : 0,
-      balance
+  const participants: ParticipantSummary[] = Array.from(netBalances.entries()).map(
+    ([userId, balance]) => {
+      return {
+        userId,
+        userName: userMap.get(userId)?.name ?? 'Desconhecido',
+        paid:
+          (paid.get(userId) ?? 0) +
+          debtExpenses.filter((e) => e.paidBy === userId).reduce((s, e) => s + e.amount, 0),
+        fairShare: participantIds.includes(userId) ? fairShare : 0,
+        balance
+      }
     }
-  })
+  )
 
   // 7. Greedy minimum-transfer settlement algorithm using the consolidated net balances
   const debtors = participants

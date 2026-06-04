@@ -15,7 +15,7 @@ export default function AddCategoryModal({ onClose, onSuccess }: Props) {
     if (!name.trim()) return
 
     const updated = await addCategory.mutateAsync(name.trim())
-    const newCat = updated.categories?.find(c => c.name === name.trim())
+    const newCat = updated.categories?.find((c) => c.name === name.trim())
     if (newCat) {
       onSuccess(newCat.id)
     }
@@ -33,7 +33,9 @@ export default function AddCategoryModal({ onClose, onSuccess }: Props) {
       >
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-foreground">Nova Categoria</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">✕</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            ✕
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

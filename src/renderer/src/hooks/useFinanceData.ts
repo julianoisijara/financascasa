@@ -118,7 +118,7 @@ export function useEditExpense() {
       const monthData = current.years[year]?.[month]
       if (!monthData) throw new Error('Month not found')
 
-      const expenses = monthData.expenses.map(e => {
+      const expenses = monthData.expenses.map((e) => {
         if (e.id === expenseId) {
           return {
             ...e,

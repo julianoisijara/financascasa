@@ -58,12 +58,7 @@ export default function App() {
 
   // First access — no data or no users
   if (!appData || appData.users.length === 0) {
-    return (
-      <OnboardingScreen
-        onComplete={handleOnboardingComplete}
-        isLoading={saveData.isPending}
-      />
-    )
+    return <OnboardingScreen onComplete={handleOnboardingComplete} isLoading={saveData.isPending} />
   }
 
   return (

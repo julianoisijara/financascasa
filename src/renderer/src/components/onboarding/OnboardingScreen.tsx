@@ -36,7 +36,9 @@ export default function OnboardingScreen({ onComplete, isLoading }: Props) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="card p-6 space-y-5">
           <div>
-            <label className="label" htmlFor="userName">O seu nome</label>
+            <label className="label" htmlFor="userName">
+              O seu nome
+            </label>
             <input
               id="userName"
               className="input-field"
@@ -50,7 +52,9 @@ export default function OnboardingScreen({ onComplete, isLoading }: Props) {
           </div>
 
           <div>
-            <label className="label" htmlFor="year">Ano inicial</label>
+            <label className="label" htmlFor="year">
+              Ano inicial
+            </label>
             <input
               id="year"
               className="input-field"
@@ -73,12 +77,7 @@ export default function OnboardingScreen({ onComplete, isLoading }: Props) {
             </p>
           )}
 
-          <button
-            id="btn-start"
-            type="submit"
-            className="btn-primary w-full"
-            disabled={isLoading}
-          >
+          <button id="btn-start" type="submit" className="btn-primary w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <span className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />

@@ -1,10 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class'],
-  content: [
-    './src/renderer/index.html',
-    './src/renderer/src/**/*.{ts,tsx,js,jsx}'
-  ],
+  content: ['./src/renderer/index.html', './src/renderer/src/**/*.{ts,tsx,js,jsx}'],
   theme: {
     extend: {
       fontFamily: {
@@ -68,7 +65,7 @@ module.exports = {
           from: { opacity: '0' },
           to: { opacity: '1' }
         },
-        'glow': {
+        glow: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.6' }
         }
@@ -76,7 +73,7 @@ module.exports = {
       animation: {
         'slide-in': 'slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         'fade-in': 'fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        'glow': 'glow 2s ease-in-out infinite'
+        glow: 'glow 2s ease-in-out infinite'
       }
     }
   },

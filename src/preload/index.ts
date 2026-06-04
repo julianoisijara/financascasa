@@ -20,7 +20,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMenuLogout: (callback: () => void) => ipcRenderer.on('menu:logout', () => callback()),
   onMenuOpenUsers: (callback: () => void) => ipcRenderer.on('menu:open-users', () => callback()),
   onMenuOpenYears: (callback: () => void) => ipcRenderer.on('menu:open-years', () => callback()),
-  onMenuOpenSettings: (callback: () => void) => ipcRenderer.on('menu:open-settings', () => callback()),
+  onMenuOpenSettings: (callback: () => void) =>
+    ipcRenderer.on('menu:open-settings', () => callback()),
 
   // Settings
   getDataPath: () => ipcRenderer.invoke('settings:getDataPath'),

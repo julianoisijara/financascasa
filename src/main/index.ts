@@ -66,10 +66,7 @@ function buildMenu(): void {
       ? [
           {
             label: 'Dev',
-            submenu: [
-              { role: 'reload' as const },
-              { role: 'toggleDevTools' as const }
-            ]
+            submenu: [{ role: 'reload' as const }, { role: 'toggleDevTools' as const }]
           }
         ]
       : [])
@@ -114,6 +111,7 @@ function createWindow(): void {
 
 // Ignore benign macOS certificate parsing errors in the terminal
 app.commandLine.appendSwitch('ignore-certificate-errors')
+app.commandLine.appendSwitch('log-level', '3')
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.financas.divisaojusta')

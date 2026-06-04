@@ -13,7 +13,15 @@ interface Props {
   onViewChange: (v: 'expenses' | 'dashboard' | 'settings') => void
 }
 
-export default function Sidebar({ appData, selectedYear, selectedMonth, onSelectYear, onSelectMonth, view, onViewChange }: Props) {
+export default function Sidebar({
+  appData,
+  selectedYear,
+  selectedMonth,
+  onSelectYear,
+  onSelectMonth,
+  view,
+  onViewChange
+}: Props) {
   const years = Object.keys(appData.years).sort((a, b) => Number(b) - Number(a))
   const { theme, toggleTheme } = useTheme()
 
@@ -29,7 +37,9 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
             </div>
             <div>
               <h1 className="text-base font-bold text-foreground tracking-tight">Finanças</h1>
-              <p className="text-xs font-medium text-muted-foreground mt-0.5">{appData.users.length} participante{appData.users.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">
+                {appData.users.length} participante{appData.users.length !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
           <button
@@ -77,7 +87,9 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
 
       {/* Users list */}
       <div className="border-t border-white/5 px-5 py-4 bg-white/[0.01]">
-        <p className="text-[10px] font-bold text-muted-foreground/80 mb-3 uppercase tracking-widest">Participantes</p>
+        <p className="text-[10px] font-bold text-muted-foreground/80 mb-3 uppercase tracking-widest">
+          Participantes
+        </p>
         <div className="space-y-1.5">
           {appData.users.slice(0, 5).map((user) => (
             <div key={user.id} className="flex items-center gap-3">
@@ -88,7 +100,9 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
             </div>
           ))}
           {appData.users.length > 5 && (
-            <p className="text-xs text-muted-foreground mt-2 pl-9 font-medium">+{appData.users.length - 5} mais</p>
+            <p className="text-xs text-muted-foreground mt-2 pl-9 font-medium">
+              +{appData.users.length - 5} mais
+            </p>
           )}
         </div>
       </div>
@@ -113,14 +127,23 @@ export default function Sidebar({ appData, selectedYear, selectedMonth, onSelect
 }
 
 function YearGroup({
-  year, selectedYear, selectedMonth, appData, onSelectYear, onSelectMonth, view, onViewChange
+  year,
+  selectedYear,
+  selectedMonth,
+  appData,
+  onSelectYear,
+  onSelectMonth,
+  view,
+  onViewChange
 }: Props & { year: string }) {
   const [open, setOpen] = useState(year === selectedYear)
   const months = Object.keys(appData.years[year] ?? {}).sort()
 
   const totalAmountForYear = months.reduce((sum, m) => {
     const monthExpenses = appData.years[year]?.[m]?.expenses ?? []
-    const monthTotal = monthExpenses.filter(e => !e.debtToUserId).reduce((mSum, e) => mSum + e.amount, 0)
+    const monthTotal = monthExpenses
+      .filter((e) => !e.debtToUserId)
+      .reduce((mSum, e) => mSum + e.amount, 0)
     return sum + monthTotal
   }, 0)
 
@@ -130,7 +153,9 @@ function YearGroup({
         id={`year-${year}`}
         className={cn(
           'w-full flex items-center justify-between px-4 py-2 text-sm font-semibold transition-colors',
-          selectedYear === year && view === 'expenses' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          selectedYear === year && view === 'expenses'
+            ? 'text-primary'
+            : 'text-muted-foreground hover:text-foreground'
         )}
         onClick={() => {
           setOpen(!open)
@@ -143,7 +168,9 @@ function YearGroup({
         <span>{year}</span>
         <span className="flex items-center gap-1">
           {totalAmountForYear > 0 && (
-            <span className="text-xs bg-primary/20 text-primary rounded-full px-2 py-0.5 whitespace-nowrap">{formatCurrency(totalAmountForYear)}</span>
+            <span className="text-xs bg-primary/20 text-primary rounded-full px-2 py-0.5 whitespace-nowrap">
+              {formatCurrency(totalAmountForYear)}
+            </span>
           )}
           <span className="text-xs">{open ? '▾' : '▸'}</span>
         </span>
@@ -153,13 +180,20 @@ function YearGroup({
         <div className="pb-1">
           {months.map((month) => {
             const expenses = appData.years[year]?.[month]?.expenses ?? []
-            const totalAmount = expenses.filter(e => !e.debtToUserId).reduce((sum, e) => sum + e.amount, 0)
-            const isSelected = selectedYear === year && selectedMonth === month && view === 'expenses'
+            const totalAmount = expenses
+              .filter((e) => !e.debtToUserId)
+              .reduce((sum, e) => sum + e.amount, 0)
+            const isSelected =
+              selectedYear === year && selectedMonth === month && view === 'expenses'
             return (
               <button
                 key={month}
                 id={`month-${year}-${month}`}
-                onClick={() => { onSelectYear(year); onSelectMonth(month); onViewChange('expenses') }}
+                onClick={() => {
+                  onSelectYear(year)
+                  onSelectMonth(month)
+                  onViewChange('expenses')
+                }}
                 className={cn(
                   'w-full flex items-center justify-between px-6 py-1.5 text-xs transition-all duration-150',
                   isSelected
@@ -169,10 +203,14 @@ function YearGroup({
               >
                 <span>{getMonthName(month)}</span>
                 {totalAmount > 0 && (
-                  <span className={cn(
-                    'rounded-full px-2 py-0.5 whitespace-nowrap',
-                    isSelected ? 'bg-primary/30 text-primary' : 'bg-muted text-muted-foreground'
-                  )}>{formatCurrency(totalAmount)}</span>
+                  <span
+                    className={cn(
+                      'rounded-full px-2 py-0.5 whitespace-nowrap',
+                      isSelected ? 'bg-primary/30 text-primary' : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    {formatCurrency(totalAmount)}
+                  </span>
                 )}
               </button>
             )

@@ -52,9 +52,20 @@ export default function ExpenseForm({ appData, year, month }: Props) {
     if (amount <= 0) return setError('Insira um valor válido.')
     if (!paidBy) return setError('Selecione o responsável pelo pagamento.')
     if (isDebt && !debtToUserId) return setError('Selecione quem deve pagar essa despesa.')
-    if (isDebt && debtToUserId === paidBy) return setError('O devedor não pode ser a mesma pessoa que pagou.')
+    if (isDebt && debtToUserId === paidBy)
+      return setError('O devedor não pode ser a mesma pessoa que pagou.')
 
-    await addExpense.mutateAsync({ year, month, expense: { description: description.trim(), amount, paidBy, categoryId, debtToUserId: isDebt ? debtToUserId : undefined } })
+    await addExpense.mutateAsync({
+      year,
+      month,
+      expense: {
+        description: description.trim(),
+        amount,
+        paidBy,
+        categoryId,
+        debtToUserId: isDebt ? debtToUserId : undefined
+      }
+    })
 
     // Reset
     setDescription('')
@@ -84,19 +95,25 @@ export default function ExpenseForm({ appData, year, month }: Props) {
       {/* Header */}
       <div className="px-6 py-6 border-b border-white/5 relative overflow-hidden drag-region">
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-30 pointer-events-none" />
-        <h2 className="text-base font-bold text-foreground tracking-tight relative z-10">Lançar Despesa</h2>
-        <p className="text-xs font-medium text-muted-foreground mt-1 relative z-10">Adicione uma nova despesa ao mês</p>
+        <h2 className="text-base font-bold text-foreground tracking-tight relative z-10">
+          Lançar Despesa
+        </h2>
+        <p className="text-xs font-medium text-muted-foreground mt-1 relative z-10">
+          Adicione uma nova despesa ao mês
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
         {/* Category */}
         <div>
-          <label className="label" htmlFor="expense-category">Categoria</label>
+          <label className="label" htmlFor="expense-category">
+            Categoria
+          </label>
           <select
             id="expense-category"
             className={cn(
               "input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10",
-              touched && !categoryId && "border-destructive ring-1 ring-destructive/50"
+              touched && !categoryId && 'border-destructive ring-1 ring-destructive/50'
             )}
             value={categoryId}
             onChange={handleCategoryChange}
@@ -104,15 +121,21 @@ export default function ExpenseForm({ appData, year, month }: Props) {
           >
             <option value="">Nenhuma categoria</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
-            <option value="new" className="font-bold text-primary">+ Nova categoria...</option>
+            <option value="new" className="font-bold text-primary">
+              + Nova categoria...
+            </option>
           </select>
         </div>
 
         {/* Description */}
         <div>
-          <label className="label" htmlFor="expense-desc">Descrição <span className="font-normal opacity-60">(opcional)</span></label>
+          <label className="label" htmlFor="expense-desc">
+            Descrição <span className="font-normal opacity-60">(opcional)</span>
+          </label>
           <textarea
             id="expense-desc"
             className="input-field resize-none h-20"
@@ -125,14 +148,20 @@ export default function ExpenseForm({ appData, year, month }: Props) {
 
         {/* Amount */}
         <div>
-          <label className="label" htmlFor="expense-amount">Valor</label>
+          <label className="label" htmlFor="expense-amount">
+            Valor
+          </label>
           <div className="relative group">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold group-focus-within:text-primary transition-colors">R$</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold group-focus-within:text-primary transition-colors">
+              R$
+            </span>
             <input
               id="expense-amount"
               className={cn(
-                "input-field pl-10 font-medium text-lg tracking-wide",
-                touched && (!amountRaw || parseCurrencyInput(amountRaw) <= 0) && "border-destructive ring-1 ring-destructive/50"
+                'input-field pl-10 font-medium text-lg tracking-wide',
+                touched &&
+                  (!amountRaw || parseCurrencyInput(amountRaw) <= 0) &&
+                  'border-destructive ring-1 ring-destructive/50'
               )}
               type="text"
               inputMode="numeric"
@@ -146,12 +175,14 @@ export default function ExpenseForm({ appData, year, month }: Props) {
 
         {/* Paid by */}
         <div>
-          <label className="label" htmlFor="expense-paidby">Pago por</label>
+          <label className="label" htmlFor="expense-paidby">
+            Pago por
+          </label>
           <select
             id="expense-paidby"
             className={cn(
               "input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10",
-              touched && !paidBy && "border-destructive ring-1 ring-destructive/50"
+              touched && !paidBy && 'border-destructive ring-1 ring-destructive/50'
             )}
             value={paidBy}
             onChange={(e) => {
@@ -162,7 +193,9 @@ export default function ExpenseForm({ appData, year, month }: Props) {
           >
             <option value="">Selecione quem pagou...</option>
             {appData.users.map((user) => (
-              <option key={user.id} value={user.id}>{user.name}</option>
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
             ))}
           </select>
         </div>
@@ -173,7 +206,10 @@ export default function ExpenseForm({ appData, year, month }: Props) {
             <input
               type="checkbox"
               checked={isDebt}
-              onChange={(e) => { setIsDebt(e.target.checked); if (!e.target.checked) setDebtToUserId('') }}
+              onChange={(e) => {
+                setIsDebt(e.target.checked)
+                if (!e.target.checked) setDebtToUserId('')
+              }}
               disabled={addExpense.isPending}
               className="h-4 w-4 rounded border-amber-500/40 text-amber-500 focus:ring-amber-500/50 cursor-pointer accent-amber-500"
             />
@@ -188,9 +224,13 @@ export default function ExpenseForm({ appData, year, month }: Props) {
               disabled={addExpense.isPending}
             >
               <option value="">Selecione o devedor...</option>
-              {appData.users.filter(u => u.id !== paidBy).map((user) => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
+              {appData.users
+                .filter((u) => u.id !== paidBy)
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
             </select>
           )}
         </div>

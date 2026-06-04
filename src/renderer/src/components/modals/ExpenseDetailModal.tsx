@@ -15,18 +15,30 @@ interface Props {
   isDeleting: boolean
 }
 
-export default function ExpenseDetailModal({ expense, users, categories, year, month, onClose, onDelete, isDeleting }: Props) {
+export default function ExpenseDetailModal({
+  expense,
+  users,
+  categories,
+  year,
+  month,
+  onClose,
+  onDelete,
+  isDeleting
+}: Props) {
   const [isEditing, setIsEditing] = useState(false)
-  
+
   // Edit form state
   const [description, setDescription] = useState(expense.description)
   // format amount back to currency string for input mask (amount is in cents)
-  const initialAmountRaw = (expense.amount / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const initialAmountRaw = (expense.amount / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
   const [amountRaw, setAmountRaw] = useState(initialAmountRaw)
   const [paidBy, setPaidBy] = useState(expense.paidBy)
   const [categoryId, setCategoryId] = useState(expense.categoryId ?? '')
   const [showAddCategory, setShowAddCategory] = useState(false)
-  
+
   const editExpense = useEditExpense()
   const addCategory = useAddCategory()
 
@@ -41,16 +53,26 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
 
   const payer = users.find((u) => u.id === expense.paidBy)
   const date = new Date(expense.createdAt).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 
-  const updatedDate = expense.updatedAt ? new Date(expense.updatedAt).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  }) : null
+  const updatedDate = expense.updatedAt
+    ? new Date(expense.updatedAt).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : null
   const updater = expense.updatedBy ? users.find((u) => u.id === expense.updatedBy) : null
-  const category = categories.find(c => c.id === expense.categoryId)
+  const category = categories.find((c) => c.id === expense.categoryId)
   const isDebtExpense = !!expense.debtToUserId
-  const debtor = isDebtExpense ? users.find(u => u.id === expense.debtToUserId) : null
+  const debtor = isDebtExpense ? users.find((u) => u.id === expense.debtToUserId) : null
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAmountRaw(maskCurrencyInput(e.target.value))
@@ -61,7 +83,7 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
     if (!categoryId) return
     const amount = parseCurrencyInput(amountRaw)
     if (amount <= 0) return
-    
+
     // Fallback to first user if we need an updatedBy ID
     const updaterId = users[0]?.id
 
@@ -126,14 +148,20 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
               >
                 <option value="">Nenhuma categoria</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
-                <option value="new" className="font-bold text-primary">+ Nova categoria...</option>
+                <option value="new" className="font-bold text-primary">
+                  + Nova categoria...
+                </option>
               </select>
             </div>
-            
+
             <div>
-              <label className="label">Descrição <span className="font-normal opacity-60">(opcional)</span></label>
+              <label className="label">
+                Descrição <span className="font-normal opacity-60">(opcional)</span>
+              </label>
               <textarea
                 className="input-field resize-none h-20"
                 value={description}
@@ -145,7 +173,9 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
             <div>
               <label className="label">Valor</label>
               <div className="relative group">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold group-focus-within:text-primary transition-colors">R$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold group-focus-within:text-primary transition-colors">
+                  R$
+                </span>
                 <input
                   className="input-field pl-10 font-medium text-lg tracking-wide"
                   type="text"
@@ -167,25 +197,23 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
                 disabled={editExpense.isPending}
               >
                 {users.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="flex gap-2 pt-2">
-              <button 
-                type="button" 
-                className="btn-secondary flex-1" 
+              <button
+                type="button"
+                className="btn-secondary flex-1"
                 onClick={() => setIsEditing(false)}
                 disabled={editExpense.isPending}
               >
                 Cancelar
               </button>
-              <button 
-                type="submit" 
-                className="btn-primary flex-1"
-                disabled={editExpense.isPending}
-              >
+              <button type="submit" className="btn-primary flex-1" disabled={editExpense.isPending}>
                 {editExpense.isPending ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
@@ -193,24 +221,36 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
         ) : (
           <>
             {/* Amount */}
-            <div className={cn(
-              "rounded-lg border px-4 py-3 text-center relative group",
-              isDebtExpense ? "bg-amber-500/10 border-amber-500/20" : "bg-primary/10 border-primary/20"
-            )}>
+            <div
+              className={cn(
+                'rounded-lg border px-4 py-3 text-center relative group',
+                isDebtExpense
+                  ? 'bg-amber-500/10 border-amber-500/20'
+                  : 'bg-primary/10 border-primary/20'
+              )}
+            >
               {isDebtExpense && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">⚡ Valor Extra</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">
+                  ⚡ Valor Extra
+                </p>
               )}
               <p className="text-xs text-muted-foreground mb-1">Valor pago</p>
-              <p className={cn(
-                "text-2xl font-bold",
-                isDebtExpense ? "text-amber-400" : "text-primary"
-              )}>{formatCurrency(expense.amount)}</p>
+              <p
+                className={cn(
+                  'text-2xl font-bold',
+                  isDebtExpense ? 'text-amber-400' : 'text-primary'
+                )}
+              >
+                {formatCurrency(expense.amount)}
+              </p>
             </div>
 
             {isDebtExpense && debtor && (
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-center">
                 <p className="text-xs text-amber-200/80">
-                  Esta despesa será paga integralmente por <strong className="text-amber-400">{debtor.name}</strong> para <strong className="text-amber-400">{payer?.name}</strong>.
+                  Esta despesa será paga integralmente por{' '}
+                  <strong className="text-amber-400">{debtor.name}</strong> para{' '}
+                  <strong className="text-amber-400">{payer?.name}</strong>.
                 </p>
               </div>
             )}
@@ -218,9 +258,7 @@ export default function ExpenseDetailModal({ expense, users, categories, year, m
             {/* Details */}
             <div className="space-y-3 bg-black/5 dark:bg-black/20 rounded-xl p-4 border border-border">
               <DetailRow label="Pago por" value={payer?.name ?? '—'} />
-              {expense.description && (
-                <DetailRow label="Descrição" value={expense.description} />
-              )}
+              {expense.description && <DetailRow label="Descrição" value={expense.description} />}
             </div>
 
             {/* Actions */}

@@ -35,7 +35,10 @@ export default function MainLayout({ appData }: Props) {
         selectedYear={selectedYear}
         selectedMonth={selectedMonth}
         onSelectYear={setSelectedYear}
-        onSelectMonth={(m) => { setSelectedMonth(m); setView('expenses') }}
+        onSelectMonth={(m) => {
+          setSelectedMonth(m)
+          setView('expenses')
+        }}
         view={view}
         onViewChange={setView}
       />
@@ -47,18 +50,10 @@ export default function MainLayout({ appData }: Props) {
       ) : (
         <>
           {/* Column 2 — Expense list + settlements */}
-          <ExpenseList
-            appData={appData}
-            year={selectedYear}
-            month={selectedMonth}
-          />
+          <ExpenseList appData={appData} year={selectedYear} month={selectedMonth} />
 
           {/* Column 3 — Add expense form */}
-          <ExpenseForm
-            appData={appData}
-            year={selectedYear}
-            month={selectedMonth}
-          />
+          <ExpenseForm appData={appData} year={selectedYear} month={selectedMonth} />
         </>
       )}
     </div>

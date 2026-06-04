@@ -5,7 +5,9 @@ export default function Settings() {
   const [currentPath, setCurrentPath] = useState('')
   const [defaultDir, setDefaultDir] = useState('')
   const [loading, setLoading] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
+    null
+  )
 
   useEffect(() => {
     loadPaths()
@@ -39,10 +41,14 @@ export default function Settings() {
         setCurrentPath(setResult.path)
         setFeedback({
           type: 'success',
-          message: 'Local dos dados alterado com sucesso! Reinicie o aplicativo para carregar os dados do novo local.'
+          message:
+            'Local dos dados alterado com sucesso! Reinicie o aplicativo para carregar os dados do novo local.'
         })
       } else {
-        setFeedback({ type: 'error', message: setResult.error ?? 'Erro ao alterar o local dos dados.' })
+        setFeedback({
+          type: 'error',
+          message: setResult.error ?? 'Erro ao alterar o local dos dados.'
+        })
       }
     } catch (err) {
       setFeedback({ type: 'error', message: String(err) })
@@ -59,7 +65,8 @@ export default function Settings() {
         setCurrentPath(result.path)
         setFeedback({
           type: 'success',
-          message: 'Local dos dados restaurado para o padrão! Reinicie o aplicativo para carregar os dados.'
+          message:
+            'Local dos dados restaurado para o padrão! Reinicie o aplicativo para carregar os dados.'
         })
       } else {
         setFeedback({ type: 'error', message: 'Erro ao restaurar o local padrão.' })
@@ -82,7 +89,9 @@ export default function Settings() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Configurações</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Gerencie as configurações do sistema</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Gerencie as configurações do sistema
+            </p>
           </div>
         </div>
       </div>
@@ -97,7 +106,11 @@ export default function Settings() {
             <div>
               <h2 className="text-sm font-bold text-foreground">Local dos Dados</h2>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Escolha onde o arquivo <code className="bg-white/5 px-1.5 py-0.5 rounded text-primary font-mono text-[10px]">finance-data.json</code> será salvo
+                Escolha onde o arquivo{' '}
+                <code className="bg-white/5 px-1.5 py-0.5 rounded text-primary font-mono text-[10px]">
+                  finance-data.json
+                </code>{' '}
+                será salvo
               </p>
             </div>
           </div>
@@ -155,35 +168,54 @@ export default function Settings() {
 
           {/* Feedback message */}
           {feedback && (
-            <div className={cn(
-              'rounded-xl px-4 py-3 text-xs font-medium border',
-              feedback.type === 'success'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : 'bg-destructive/10 text-destructive border-destructive/20'
-            )}>
+            <div
+              className={cn(
+                'rounded-xl px-4 py-3 text-xs font-medium border',
+                feedback.type === 'success'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-destructive/10 text-destructive border-destructive/20'
+              )}
+            >
               {feedback.type === 'success' ? '✅' : '❌'} {feedback.message}
             </div>
           )}
 
           {/* Info box */}
           <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 space-y-2">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ℹ️ Como funciona</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              ℹ️ Como funciona
+            </p>
             <ul className="space-y-1.5 text-[11px] text-muted-foreground leading-relaxed">
               <li className="flex gap-2">
                 <span className="text-primary mt-0.5">•</span>
-                <span>Ao alterar o local, o sistema <strong className="text-foreground/80">copia os dados atuais</strong> para a nova pasta automaticamente.</span>
+                <span>
+                  Ao alterar o local, o sistema{' '}
+                  <strong className="text-foreground/80">copia os dados atuais</strong> para a nova
+                  pasta automaticamente.
+                </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-primary mt-0.5">•</span>
-                <span>Se já existir um arquivo <code className="font-mono text-primary/70 text-[10px]">finance-data.json</code> na pasta escolhida, ele será <strong className="text-foreground/80">utilizado diretamente</strong>.</span>
+                <span>
+                  Se já existir um arquivo{' '}
+                  <code className="font-mono text-primary/70 text-[10px]">finance-data.json</code>{' '}
+                  na pasta escolhida, ele será{' '}
+                  <strong className="text-foreground/80">utilizado diretamente</strong>.
+                </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-primary mt-0.5">•</span>
-                <span>Se nenhum arquivo existir, um <strong className="text-foreground/80">novo será criado</strong> automaticamente.</span>
+                <span>
+                  Se nenhum arquivo existir, um{' '}
+                  <strong className="text-foreground/80">novo será criado</strong> automaticamente.
+                </span>
               </li>
               <li className="flex gap-2">
                 <span className="text-amber-400 mt-0.5">•</span>
-                <span>Após alterar, <strong className="text-amber-300/80">reinicie o aplicativo</strong> para garantir que os dados carreguem corretamente.</span>
+                <span>
+                  Após alterar, <strong className="text-amber-300/80">reinicie o aplicativo</strong>{' '}
+                  para garantir que os dados carreguem corretamente.
+                </span>
               </li>
             </ul>
           </div>
@@ -213,7 +245,9 @@ export default function Settings() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2.5">
-      <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-0.5">{label}</p>
+      <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-0.5">
+        {label}
+      </p>
       <p className="text-xs font-medium text-foreground/80 truncate">{value}</p>
     </div>
   )

@@ -64,7 +64,11 @@
 
   body {
     @apply bg-background text-foreground font-sans transition-colors duration-300;
-    background-image: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+    background-image: radial-gradient(
+      circle at 50% 0%,
+      rgba(16, 185, 129, 0.08) 0%,
+      transparent 70%
+    );
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     user-select: none;
