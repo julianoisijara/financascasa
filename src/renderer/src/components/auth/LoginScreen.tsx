@@ -21,7 +21,7 @@ export default function LoginScreen() {
         </div>
         <h1 className="text-3xl font-bold text-foreground">Finanças</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Controle financeiro compartilhado e sincronizado via Google Drive.
+          Controle financeiro compartilhado e sincronizado via Arquivo.
         </p>
 
         <div className="mt-8 card p-6 space-y-4">

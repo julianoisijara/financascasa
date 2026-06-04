@@ -145,7 +145,7 @@ export default function OnboardingScreen({ onComplete, isLoading }: Props) {
         </form>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Os dados são guardados de forma privada no seu Google Drive.
+          Os dados são guardados de forma privada na pasta selecionada.
         </p>
       </div>
     </div>

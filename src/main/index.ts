@@ -4,8 +4,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipcHandlers'
 
-// Force the app name to be "Menu" so the macOS application menu displays as "Menu"
-app.name = 'Menu'
+// Force the app name to be "Finanças" so the macOS application menu and dock displays it correctly
+app.name = 'Finanças'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -36,7 +36,7 @@ function buildMenu(): void {
     ...(process.platform === 'darwin'
       ? [
           {
-            label: 'Menu',
+            label: 'Finanças',
             submenu: [
               { role: 'about' as const },
               { type: 'separator' as const },
@@ -83,8 +83,9 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     show: false,
+    title: 'Finanças',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -123,6 +124,10 @@ app.whenReady().then(() => {
   registerIpcHandlers()
   buildMenu()
   createWindow()
+
+  if (process.platform === 'darwin') {
+    app.dock?.setIcon(icon)
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
