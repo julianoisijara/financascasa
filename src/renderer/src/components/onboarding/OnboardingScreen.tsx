@@ -1,12 +1,25 @@
 import { useState } from 'react'
+import { cn } from '../../lib/utils'
+
+const COLOR_PRESETS = [
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#8b5cf6', // Purple
+  '#f43f5e', // Rose
+  '#f97316', // Orange
+  '#06b6d4', // Teal
+  '#f59e0b', // Amber
+  '#ef4444' // Red
+]
 
 interface Props {
-  onComplete: (userName: string, year: string) => Promise<void>
+  onComplete: (userName: string, year: string, color?: string) => Promise<void>
   isLoading: boolean
 }
 
 export default function OnboardingScreen({ onComplete, isLoading }: Props) {
   const [userName, setUserName] = useState('')
+  const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0])
   const [year, setYear] = useState(String(new Date().getFullYear()))
   const [error, setError] = useState('')
 
@@ -16,7 +29,7 @@ export default function OnboardingScreen({ onComplete, isLoading }: Props) {
     if (!userName.trim()) return setError('Por favor, insira o seu nome.')
     const y = parseInt(year, 10)
     if (isNaN(y) || y < 2000 || y > 2100) return setError('Ano inválido.')
-    await onComplete(userName.trim(), String(y))
+    await onComplete(userName.trim(), String(y), selectedColor)
   }
 
   return (
@@ -49,6 +62,48 @@ export default function OnboardingScreen({ onComplete, isLoading }: Props) {
               autoFocus
               disabled={isLoading}
             />
+          </div>
+
+          <div>
+            <label className="label">A sua cor</label>
+            <div className="flex flex-wrap gap-2 items-center pt-1">
+              {COLOR_PRESETS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={cn(
+                    'h-7 w-7 rounded-full border-2 transition-all transform hover:scale-110 shadow-sm',
+                    selectedColor === color
+                      ? 'border-foreground scale-110 ring-2 ring-primary/20'
+                      : 'border-transparent'
+                  )}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setSelectedColor(color)}
+                  disabled={isLoading}
+                  title="Escolher cor pré-definida"
+                />
+              ))}
+              <label
+                className={cn(
+                  'h-7 w-7 rounded-full border-2 transition-all transform hover:scale-110 cursor-pointer flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-red-500 via-green-500 to-blue-500 shadow-sm',
+                  !COLOR_PRESETS.includes(selectedColor)
+                    ? 'border-foreground scale-110 ring-2 ring-primary/20'
+                    : 'border-transparent'
+                )}
+                title="Escolher cor personalizada"
+              >
+                <span className="text-[8px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                  Personalizar
+                </span>
+                <input
+                  type="color"
+                  value={COLOR_PRESETS.includes(selectedColor) ? '#3b82f6' : selectedColor}
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  disabled={isLoading}
+                />
+              </label>
+            </div>
           </div>
 
           <div>

@@ -91,21 +91,31 @@ export default function ExpenseList({ appData, year, month }: Props) {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Finanças
           </p>
           <div className="space-y-2">
-            {summary.settlements.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-foreground/90">
-                <span className="font-semibold text-foreground bg-white/5 px-2 py-0.5 rounded-md">
-                  {s.from}
-                </span>
-                <span className="text-muted-foreground text-xs">deve</span>
-                <span className="font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
-                  {formatCurrency(s.amount)}
-                </span>
-                <span className="text-muted-foreground text-xs">para</span>
-                <span className="font-semibold text-foreground bg-white/5 px-2 py-0.5 rounded-md">
-                  {s.to}
-                </span>
-              </div>
-            ))}
+            {summary.settlements.map((s, i) => {
+              const fromUser = appData.users.find((u) => u.name === s.from)
+              const toUser = appData.users.find((u) => u.name === s.to)
+              return (
+                <div key={i} className="flex items-center gap-2 text-sm text-foreground/90">
+                  <span
+                    className="font-semibold bg-white/5 px-2 py-0.5 rounded-md"
+                    style={fromUser?.color ? { color: fromUser.color } : undefined}
+                  >
+                    {s.from}
+                  </span>
+                  <span className="text-muted-foreground text-xs">deve</span>
+                  <span className="font-bold text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                    {formatCurrency(s.amount)}
+                  </span>
+                  <span className="text-muted-foreground text-xs">para</span>
+                  <span
+                    className="font-semibold bg-white/5 px-2 py-0.5 rounded-md"
+                    style={toUser?.color ? { color: toUser.color } : undefined}
+                  >
+                    {s.to}
+                  </span>
+                </div>
+              )
+            })}
           </div>
           <div className="pt-3 border-t border-emerald-500/10 mt-4 flex items-center justify-between text-xs text-emerald-100/50">
             <span>
@@ -124,48 +134,66 @@ export default function ExpenseList({ appData, year, month }: Props) {
       {/* Per-person breakdown */}
       {summary.participants.length > 0 && (
         <div className="mx-6 mt-4 grid grid-cols-2 gap-3">
-          {summary.participants.map((p) => (
-            <button
-              key={p.userId}
-              onClick={() => setFilterUserId(filterUserId === p.userId ? null : p.userId)}
-              className={cn(
-                'rounded-xl border backdrop-blur-md px-4 py-3 flex items-center justify-between gap-3 transition-all duration-300 hover:scale-[1.02]',
-                filterUserId === p.userId
-                  ? 'bg-primary/20 border-primary shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                  : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04]'
-              )}
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={cn(
-                    'h-8 w-8 flex-shrink-0 rounded-full border flex items-center justify-center text-sm font-bold transition-colors',
-                    filterUserId === p.userId
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-gradient-to-br from-primary/30 to-primary/5 border-primary/20 text-primary'
-                  )}
-                >
-                  {p.userName.charAt(0).toUpperCase()}
+          {summary.participants.map((p) => {
+            const userObj = appData.users.find((u) => u.id === p.userId)
+            const userColor = userObj?.color
+            return (
+              <button
+                key={p.userId}
+                onClick={() => setFilterUserId(filterUserId === p.userId ? null : p.userId)}
+                className={cn(
+                  'rounded-xl border backdrop-blur-md px-4 py-3 flex items-center justify-between gap-3 transition-all duration-300 hover:scale-[1.02]',
+                  filterUserId === p.userId
+                    ? 'bg-primary/20 border-primary shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                    : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04]'
+                )}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      'h-8 w-8 flex-shrink-0 rounded-full border flex items-center justify-center text-sm font-bold transition-colors'
+                    )}
+                    style={
+                      filterUserId === p.userId
+                        ? {
+                            backgroundColor: userColor || 'var(--primary)',
+                            borderColor: userColor || 'var(--primary)',
+                            color: '#ffffff'
+                          }
+                        : {
+                            backgroundColor: userColor ? `${userColor}20` : 'rgba(16,185,129,0.2)',
+                            borderColor: userColor ? `${userColor}30` : 'rgba(16,185,129,0.1)',
+                            color: userColor || 'var(--primary)'
+                          }
+                    }
+                  >
+                    {p.userName.charAt(0).toUpperCase()}
+                  </div>
+                  <span
+                    className="text-sm font-semibold truncate"
+                    style={
+                      filterUserId === p.userId
+                        ? { color: 'var(--foreground)' }
+                        : userColor
+                          ? { color: userColor }
+                          : undefined
+                    }
+                  >
+                    {p.userName}
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    'text-sm font-medium truncate',
-                    filterUserId === p.userId ? 'text-foreground' : 'text-foreground/90'
-                  )}
-                >
-                  {p.userName}
-                </span>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid)}</div>
-                <div
-                  className={`text-xs font-medium mt-0.5 ${p.balance >= 0 ? 'text-emerald-400' : 'text-red-400/90'}`}
-                >
-                  {p.balance >= 0 ? '+' : ''}
-                  {formatCurrency(p.balance)}
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid)}</div>
+                  <div
+                    className={`text-xs font-medium mt-0.5 ${p.balance >= 0 ? 'text-emerald-400' : 'text-red-400/90'}`}
+                  >
+                    {p.balance >= 0 ? '+' : ''}
+                    {formatCurrency(p.balance)}
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -250,7 +278,21 @@ export default function ExpenseList({ appData, year, month }: Props) {
                       ⚡ Valor Extra
                     </span>
                     <span className="text-[10px] text-amber-300/70">
-                      {userMap.get(expense.debtToUserId!)} deve a {userMap.get(expense.paidBy)}
+                      <strong
+                        style={{
+                          color: appData.users.find((u) => u.id === expense.debtToUserId)?.color
+                        }}
+                      >
+                        {userMap.get(expense.debtToUserId!)}
+                      </strong>{' '}
+                      deve a{' '}
+                      <strong
+                        style={{
+                          color: appData.users.find((u) => u.id === expense.paidBy)?.color
+                        }}
+                      >
+                        {userMap.get(expense.paidBy)}
+                      </strong>
                     </span>
                   </div>
                 )}
@@ -277,7 +319,12 @@ export default function ExpenseList({ appData, year, month }: Props) {
                       <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 bg-white/5 px-2 py-0.5 rounded">
                         Pago por
                       </span>
-                      <span className="text-xs font-medium text-foreground/80">
+                      <span
+                        className="text-xs font-semibold text-foreground/80"
+                        style={{
+                          color: appData.users.find((u) => u.id === expense.paidBy)?.color
+                        }}
+                      >
                         {userMap.get(expense.paidBy) ?? '?'}
                       </span>
                     </div>

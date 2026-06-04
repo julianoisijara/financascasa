@@ -197,13 +197,14 @@ export function useAddUser() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({ name, color }: { name: string; color?: string }) => {
       const current = queryClient.getQueryData<AppData>(QUERY_KEY)
       if (!current) throw new Error('No data loaded')
 
       const newUser: User = {
         id: uuidv4(),
         name,
+        color,
         createdAt: new Date().toISOString()
       }
 

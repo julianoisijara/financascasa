@@ -34,11 +34,11 @@ export default function App() {
     }
   }, [])
 
-  const handleOnboardingComplete = async (userName: string, year: string) => {
+  const handleOnboardingComplete = async (userName: string, year: string, color?: string) => {
     const newData: AppData = {
       version: '1.0.0',
       createdAt: new Date().toISOString(),
-      users: [{ id: uuidv4(), name: userName, createdAt: new Date().toISOString() }],
+      users: [{ id: uuidv4(), name: userName, color, createdAt: new Date().toISOString() }],
       years: { [year]: generateYearData() }
     }
     await saveData.mutateAsync(newData)

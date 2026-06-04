@@ -122,7 +122,8 @@ export default function ExpenseDetailModal({
             )}
             {!isEditing && updatedDate && updater && (
               <p className="text-[10px] text-muted-foreground/80 mt-1 flex items-center gap-1">
-                <span>✎</span> Editado por {updater.name} em {updatedDate}
+                <span>✎</span> Editado por{' '}
+                <strong style={{ color: updater.color }}>{updater.name}</strong> em {updatedDate}
               </p>
             )}
           </div>
@@ -249,15 +250,24 @@ export default function ExpenseDetailModal({
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-center">
                 <p className="text-xs text-amber-200/80">
                   Esta despesa será paga integralmente por{' '}
-                  <strong className="text-amber-400">{debtor.name}</strong> para{' '}
-                  <strong className="text-amber-400">{payer?.name}</strong>.
+                  <strong style={{ color: debtor.color || 'var(--amber-400)' }}>
+                    {debtor.name}
+                  </strong>{' '}
+                  para{' '}
+                  <strong style={{ color: payer?.color || 'var(--amber-400)' }}>
+                    {payer?.name}
+                  </strong>
+                  .
                 </p>
               </div>
             )}
 
             {/* Details */}
             <div className="space-y-3 bg-black/5 dark:bg-black/20 rounded-xl p-4 border border-border">
-              <DetailRow label="Pago por" value={payer?.name ?? '—'} />
+              <DetailRow
+                label="Pago por"
+                value={payer ? <span style={{ color: payer.color }}>{payer.name}</span> : '—'}
+              />
               {expense.description && <DetailRow label="Descrição" value={expense.description} />}
             </div>
 
@@ -293,7 +303,7 @@ export default function ExpenseDetailModal({
   )
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs text-muted-foreground mb-0.5">{label}</p>

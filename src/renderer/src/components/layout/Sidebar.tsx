@@ -93,10 +93,22 @@ export default function Sidebar({
         <div className="space-y-1.5">
           {appData.users.slice(0, 5).map((user) => (
             <div key={user.id} className="flex items-center gap-3">
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20 flex items-center justify-center text-[10px] font-bold text-primary shadow-sm">
+              <div
+                className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm border"
+                style={{
+                  backgroundColor: user.color ? `${user.color}20` : 'rgba(16,185,129,0.2)',
+                  borderColor: user.color ? `${user.color}30` : 'rgba(16,185,129,0.1)',
+                  color: user.color || 'var(--primary)'
+                }}
+              >
                 {user.name.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-foreground/90 truncate">{user.name}</span>
+              <span
+                className="text-sm font-semibold truncate"
+                style={user.color ? { color: user.color } : undefined}
+              >
+                {user.name}
+              </span>
             </div>
           ))}
           {appData.users.length > 5 && (

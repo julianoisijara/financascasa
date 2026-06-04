@@ -478,22 +478,39 @@ export default function Dashboard({ appData }: Props) {
                   .map(([userId, amount]) => {
                     const pct = totalGeral > 0 ? (amount / totalGeral) * 100 : 0
                     const name = userMap.get(userId) ?? '?'
+                    const userObj = appData.users.find((u) => u.id === userId)
+                    const userColor = userObj?.color
                     return (
                       <div key={userId} className="flex items-center gap-3">
-                        <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-primary/30 to-primary/5 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                        <div
+                          className="h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border"
+                          style={{
+                            backgroundColor: userColor ? `${userColor}20` : 'rgba(16,185,129,0.2)',
+                            borderColor: userColor ? `${userColor}30` : 'rgba(16,185,129,0.1)',
+                            color: userColor || 'var(--primary)'
+                          }}
+                        >
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-foreground/90 font-medium truncate">{name}</span>
+                            <span
+                              className="text-foreground/90 font-semibold truncate"
+                              style={userColor ? { color: userColor } : undefined}
+                            >
+                              {name}
+                            </span>
                             <span className="text-foreground font-bold ml-2 flex-shrink-0">
                               {formatCurrency(amount)}
                             </span>
                           </div>
                           <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-primary/60 transition-all duration-700"
-                              style={{ width: `${pct}%` }}
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: userColor || 'var(--primary)'
+                              }}
                             />
                           </div>
                         </div>
@@ -541,8 +558,14 @@ export default function Dashboard({ appData }: Props) {
                           {isExtra && <span className="ml-1.5 text-[10px] text-amber-400">⚡</span>}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {userMap.get(e.paidBy) ?? '?'} •{' '}
-                          {new Date(e.createdAt).toLocaleDateString('pt-BR')}
+                          <strong
+                            style={{
+                              color: appData.users.find((u) => u.id === e.paidBy)?.color
+                            }}
+                          >
+                            {userMap.get(e.paidBy) ?? '?'}
+                          </strong>{' '}
+                          • {new Date(e.createdAt).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
                       <span
