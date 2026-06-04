@@ -24,7 +24,9 @@ export default function ExpenseForm({ appData, year, month }: Props) {
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [touched, setTouched] = useState(false)
 
-  const categories = appData.categories ?? []
+  const categories = [...(appData.categories ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name, 'pt-BR')
+  )
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value

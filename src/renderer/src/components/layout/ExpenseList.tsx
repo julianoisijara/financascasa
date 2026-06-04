@@ -48,6 +48,9 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
   }
   const summary = calculateSettlements(monthData, appData.users)
   const userMap = new Map(appData.users.map((u) => [u.id, u.name]))
+  const categories = [...(appData.categories ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name, 'pt-BR')
+  )
 
   const selectedExpense = expenses.find((e) => e.id === selectedExpenseId) || null
 
@@ -235,7 +238,7 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
             <option value="extra" className="bg-background text-amber-500 font-bold">
               ⚡ Somente Extras
             </option>
-            {appData.categories?.map((c) => (
+            {categories.map((c) => (
               <option key={c.id} value={c.id} className="bg-background text-foreground">
                 {c.name}
               </option>
@@ -329,7 +332,7 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
                           : 'text-foreground/90 group-hover:text-primary'
                       )}
                     >
-                      {appData.categories?.find((c) => c.id === expense.categoryId)?.name ??
+                      {categories.find((c) => c.id === expense.categoryId)?.name ??
                         expense.name ??
                         'Sem categoria'}
                     </p>
@@ -376,7 +379,7 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
         <ExpenseDetailModal
           expense={selectedExpense}
           users={appData.users}
-          categories={appData.categories ?? []}
+          categories={categories}
           year={year}
           month={month}
           onClose={() => setSelectedExpenseId(null)}

@@ -23,7 +23,9 @@ export default function Dashboard({ appData, onEditUser }: Props) {
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all') // 'all' | 'shared' | 'extra'
 
-  const categories = appData.categories ?? []
+  const categories = [...(appData.categories ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name, 'pt-BR')
+  )
   const userMap = new Map(appData.users.map((u) => [u.id, u.name]))
 
   // Collect expenses based on period
