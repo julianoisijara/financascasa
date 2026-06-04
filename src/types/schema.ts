@@ -1,6 +1,7 @@
 export interface User {
   id: string
   name: string
+  originalName?: string
   color?: string
   createdAt: string
 }

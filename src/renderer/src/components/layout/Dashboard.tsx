@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import type { AppData, Expense } from '@shared/schema'
+import type { AppData, Expense, User } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
 
 interface Props {
   appData: AppData
+  onEditUser?: (user: User) => void
 }
 
 type PeriodFilter = 'month' | 'year' | 'all'
 
-export default function Dashboard({ appData }: Props) {
+export default function Dashboard({ appData, onEditUser }: Props) {
   const years = Object.keys(appData.years).sort((a, b) => Number(b) - Number(a))
   const currentYear = String(new Date().getFullYear())
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0')
@@ -472,7 +473,7 @@ export default function Dashboard({ appData }: Props) {
             {userTotals.size === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-8">Sem dados</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {Array.from(userTotals.entries())
                   .sort((a, b) => b[1] - a[1])
                   .map(([userId, amount]) => {
@@ -480,8 +481,17 @@ export default function Dashboard({ appData }: Props) {
                     const name = userMap.get(userId) ?? '?'
                     const userObj = appData.users.find((u) => u.id === userId)
                     const userColor = userObj?.color
+                    const hasChangedName =
+                      userObj?.originalName && userObj.originalName !== userObj.name
                     return (
-                      <div key={userId} className="flex items-center gap-3">
+                      <button
+                        key={userId}
+                        onClick={() => {
+                          if (userObj && onEditUser) onEditUser(userObj)
+                        }}
+                        className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-2 rounded-lg transition-all group cursor-pointer border border-transparent hover:border-white/5"
+                        title={onEditUser ? 'Clique para editar participante' : undefined}
+                      >
                         <div
                           className="h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border"
                           style={{
@@ -494,12 +504,19 @@ export default function Dashboard({ appData }: Props) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between text-xs mb-1">
-                            <span
-                              className="text-foreground/90 font-semibold truncate"
-                              style={userColor ? { color: userColor } : undefined}
-                            >
-                              {name}
-                            </span>
+                            <div className="flex flex-col justify-center min-w-0">
+                              <span
+                                className="text-foreground/90 font-semibold truncate group-hover:text-primary transition-colors"
+                                style={userColor ? { color: userColor } : undefined}
+                              >
+                                {name}
+                              </span>
+                              {hasChangedName && (
+                                <span className="text-[9px] text-muted-foreground/60 truncate mt-0.5 font-medium leading-none">
+                                  nome de criação: {userObj.originalName}
+                                </span>
+                              )}
+                            </div>
                             <span className="text-foreground font-bold ml-2 flex-shrink-0">
                               {formatCurrency(amount)}
                             </span>
@@ -514,7 +531,7 @@ export default function Dashboard({ appData }: Props) {
                             />
                           </div>
                         </div>
-                      </div>
+                      </button>
                     )
                   })}
               </div>

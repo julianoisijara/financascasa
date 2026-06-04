@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { AppData } from '@shared/schema'
+import type { AppData, User } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
 import { useTheme } from '../../hooks/useTheme'
 
@@ -11,6 +11,8 @@ interface Props {
   onSelectMonth: (m: string) => void
   view: 'expenses' | 'dashboard' | 'settings'
   onViewChange: (v: 'expenses' | 'dashboard' | 'settings') => void
+  onEditUser?: (user: User) => void
+  onManageUsers?: () => void
 }
 
 export default function Sidebar({
@@ -20,7 +22,9 @@ export default function Sidebar({
   onSelectYear,
   onSelectMonth,
   view,
-  onViewChange
+  onViewChange,
+  onEditUser,
+  onManageUsers
 }: Props) {
   const years = Object.keys(appData.years).sort((a, b) => Number(b) - Number(a))
   const { theme, toggleTheme } = useTheme()
@@ -87,34 +91,63 @@ export default function Sidebar({
 
       {/* Users list */}
       <div className="border-t border-white/5 px-5 py-4 bg-white/[0.01]">
-        <p className="text-[10px] font-bold text-muted-foreground/80 mb-3 uppercase tracking-widest">
-          Participantes
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-widest">
+            Participantes
+          </p>
+          {onManageUsers && (
+            <button
+              onClick={onManageUsers}
+              className="text-[10px] font-bold text-primary hover:text-primary-hover transition-colors uppercase tracking-wider cursor-pointer"
+              title="Gerenciar participantes"
+            >
+              Gerenciar
+            </button>
+          )}
+        </div>
         <div className="space-y-1.5">
-          {appData.users.slice(0, 5).map((user) => (
-            <div key={user.id} className="flex items-center gap-3">
-              <div
-                className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm border"
-                style={{
-                  backgroundColor: user.color ? `${user.color}20` : 'rgba(16,185,129,0.2)',
-                  borderColor: user.color ? `${user.color}30` : 'rgba(16,185,129,0.1)',
-                  color: user.color || 'var(--primary)'
-                }}
+          {appData.users.slice(0, 5).map((user) => {
+            const hasChangedName = user.originalName && user.originalName !== user.name
+            return (
+              <button
+                key={user.id}
+                onClick={() => onEditUser?.(user)}
+                className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-1.5 rounded-lg transition-all group cursor-pointer border border-transparent hover:border-white/5"
+                title="Clique para editar participante"
               >
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <span
-                className="text-sm font-semibold truncate"
-                style={user.color ? { color: user.color } : undefined}
-              >
-                {user.name}
-              </span>
-            </div>
-          ))}
+                <div
+                  className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm border flex-shrink-0"
+                  style={{
+                    backgroundColor: user.color ? `${user.color}20` : 'rgba(16,185,129,0.2)',
+                    borderColor: user.color ? `${user.color}30` : 'rgba(16,185,129,0.1)',
+                    color: user.color || 'var(--primary)'
+                  }}
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <span
+                    className="text-sm font-semibold truncate group-hover:text-primary transition-colors"
+                    style={user.color ? { color: user.color } : undefined}
+                  >
+                    {user.name}
+                  </span>
+                  {hasChangedName && (
+                    <span className="text-[9px] text-muted-foreground/60 truncate mt-0.5 font-medium leading-none">
+                      nome de criação: {user.originalName}
+                    </span>
+                  )}
+                </div>
+              </button>
+            )
+          })}
           {appData.users.length > 5 && (
-            <p className="text-xs text-muted-foreground mt-2 pl-9 font-medium">
+            <button
+              onClick={onManageUsers}
+              className="w-full text-xs text-left text-muted-foreground hover:text-primary transition-colors mt-2 pl-9 font-medium cursor-pointer"
+            >
               +{appData.users.length - 5} mais
-            </p>
+            </button>
           )}
         </div>
       </div>

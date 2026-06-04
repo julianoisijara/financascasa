@@ -204,6 +204,7 @@ export function useAddUser() {
       const newUser: User = {
         id: uuidv4(),
         name,
+        originalName: name,
         color,
         createdAt: new Date().toISOString()
       }
@@ -211,6 +212,49 @@ export function useAddUser() {
       const updated: AppData = {
         ...current,
         users: [...current.users, newUser]
+      }
+
+      await window.electronAPI.writeData(updated)
+      return updated
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(QUERY_KEY, data)
+    }
+  })
+}
+
+export function useEditUser() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      name,
+      color
+    }: {
+      userId: string
+      name: string
+      color?: string
+    }) => {
+      const current = queryClient.getQueryData<AppData>(QUERY_KEY)
+      if (!current) throw new Error('No data loaded')
+
+      const updatedUsers = current.users.map((u) => {
+        if (u.id === userId) {
+          const originalName = u.originalName || u.name
+          return {
+            ...u,
+            name,
+            originalName,
+            color
+          }
+        }
+        return u
+      })
+
+      const updated: AppData = {
+        ...current,
+        users: updatedUsers
       }
 
       await window.electronAPI.writeData(updated)

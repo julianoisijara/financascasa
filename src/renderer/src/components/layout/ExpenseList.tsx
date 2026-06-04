@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { AppData } from '@shared/schema'
+import type { AppData, User } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
 import { useDeleteExpense } from '../../hooks/useFinanceData'
 import { calculateSettlements } from '../../lib/calculations'
@@ -9,11 +9,12 @@ interface Props {
   appData: AppData
   year: string
   month: string
+  onEditUser?: (user: User) => void
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
 
-export default function ExpenseList({ appData, year, month }: Props) {
+export default function ExpenseList({ appData, year, month, onEditUser }: Props) {
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState<string>('all')
@@ -148,7 +149,7 @@ export default function ExpenseList({ appData, year, month }: Props) {
                     : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04]'
                 )}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
                     className={cn(
                       'h-8 w-8 flex-shrink-0 rounded-full border flex items-center justify-center text-sm font-bold transition-colors'
@@ -169,18 +170,40 @@ export default function ExpenseList({ appData, year, month }: Props) {
                   >
                     {p.userName.charAt(0).toUpperCase()}
                   </div>
-                  <span
-                    className="text-sm font-semibold truncate"
-                    style={
-                      filterUserId === p.userId
-                        ? { color: 'var(--foreground)' }
-                        : userColor
-                          ? { color: userColor }
-                          : undefined
-                    }
-                  >
-                    {p.userName}
-                  </span>
+                  <div className="flex flex-col justify-center min-w-0 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="text-sm font-semibold truncate"
+                        style={
+                          filterUserId === p.userId
+                            ? { color: 'var(--foreground)' }
+                            : userColor
+                              ? { color: userColor }
+                              : undefined
+                        }
+                      >
+                        {p.userName}
+                      </span>
+                      {onEditUser && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (userObj) onEditUser(userObj)
+                          }}
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors p-0.5 rounded hover:bg-white/5 cursor-pointer"
+                          title="Editar participante"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </div>
+                    {userObj?.originalName && userObj.originalName !== userObj.name && (
+                      <span className="text-[9px] text-muted-foreground/60 truncate mt-0.5 font-medium leading-none">
+                        nome de criação: {userObj.originalName}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid)}</div>

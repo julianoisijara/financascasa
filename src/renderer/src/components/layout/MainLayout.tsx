@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react'
-import type { AppData } from '@shared/schema'
+import type { AppData, User } from '@shared/schema'
 import Sidebar from './Sidebar'
 import ExpenseList from './ExpenseList'
 import ExpenseForm from './ExpenseForm'
 import Dashboard from './Dashboard'
 import Settings from './Settings'
-
 interface Props {
   appData: AppData
+  onManageUsers?: () => void
+  onEditUser?: (user: User) => void
 }
 
-export default function MainLayout({ appData }: Props) {
+export default function MainLayout({ appData, onManageUsers, onEditUser }: Props) {
   const years = Object.keys(appData.years).sort((a, b) => Number(b) - Number(a))
-  const defaultYear = years[0] ?? String(new Date().getFullYear())
+  const systemYear = String(new Date().getFullYear())
+  const systemMonth = String(new Date().getMonth() + 1).padStart(2, '0')
+  const defaultYear = years.includes(systemYear) ? systemYear : (years[0] ?? systemYear)
   const months = Object.keys(appData.years[defaultYear] ?? {}).sort()
-  const currentMonthIdx = new Date().getMonth()
-  const defaultMonth = months[currentMonthIdx] ?? months[0] ?? '01'
+  const defaultMonth = months.includes(systemMonth) ? systemMonth : (months[0] ?? systemMonth)
 
   const [selectedYear, setSelectedYear] = useState(defaultYear)
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
@@ -41,16 +43,23 @@ export default function MainLayout({ appData }: Props) {
         }}
         view={view}
         onViewChange={setView}
+        onEditUser={onEditUser}
+        onManageUsers={onManageUsers}
       />
 
       {view === 'dashboard' ? (
-        <Dashboard appData={appData} />
+        <Dashboard appData={appData} onEditUser={onEditUser} />
       ) : view === 'settings' ? (
         <Settings />
       ) : (
         <>
           {/* Column 2 — Expense list + settlements */}
-          <ExpenseList appData={appData} year={selectedYear} month={selectedMonth} />
+          <ExpenseList
+            appData={appData}
+            year={selectedYear}
+            month={selectedMonth}
+            onEditUser={onEditUser}
+          />
 
           {/* Column 3 — Add expense form */}
           <ExpenseForm appData={appData} year={selectedYear} month={selectedMonth} />

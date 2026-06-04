@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { AppData, User } from '@shared/schema'
-import { useAddUser } from '../../hooks/useFinanceData'
+import { useEditUser } from '../../hooks/useFinanceData'
 import { cn } from '../../lib/utils'
 
 const COLOR_PRESETS = [
@@ -17,15 +17,23 @@ const COLOR_PRESETS = [
 interface Props {
   open: boolean
   onClose: () => void
+  user: User
   appData: AppData
-  onEditUser?: (user: User) => void
 }
 
-export default function AddUserModal({ open, onClose, appData, onEditUser }: Props) {
-  const [name, setName] = useState('')
-  const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0])
+export default function EditUserModal({ open, onClose, user, appData }: Props) {
+  const [name, setName] = useState(user.name)
+  const [selectedColor, setSelectedColor] = useState(user.color || COLOR_PRESETS[0])
   const [error, setError] = useState('')
-  const addUser = useAddUser()
+  const editUser = useEditUser()
+
+  useEffect(() => {
+    if (open) {
+      setName(user.name)
+      setSelectedColor(user.color || COLOR_PRESETS[0])
+      setError('')
+    }
+  }, [open, user])
 
   if (!open) return null
 
@@ -33,12 +41,20 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
     e.preventDefault()
     setError('')
     if (!name.trim()) return setError('Insira um nome.')
-    if (appData.users.some((u) => u.name.toLowerCase() === name.trim().toLowerCase())) {
+
+    // Check if name is taken by another user
+    const nameTaken = appData.users.some(
+      (u) => u.id !== user.id && u.name.toLowerCase() === name.trim().toLowerCase()
+    )
+    if (nameTaken) {
       return setError('Já existe um utilizador com este nome.')
     }
-    await addUser.mutateAsync({ name: name.trim(), color: selectedColor })
-    setName('')
-    setSelectedColor(COLOR_PRESETS[0])
+
+    await editUser.mutateAsync({
+      userId: user.id,
+      name: name.trim(),
+      color: selectedColor
+    })
     onClose()
   }
 
@@ -52,9 +68,9 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Adicionar Utilizador</h2>
+          <h2 className="text-base font-semibold">Editar Participante</h2>
           <button
-            id="modal-add-user-close"
+            id="modal-edit-user-close"
             className="btn-ghost p-1 text-muted-foreground"
             onClick={onClose}
           >
@@ -62,66 +78,20 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
           </button>
         </div>
 
-        {/* Current users */}
-        {appData.users.length > 0 && (
-          <div className="space-y-1">
-            <p className="label">Participantes actuais</p>
-            <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
-              {appData.users.map((u) => (
-                <div
-                  key={u.id}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm"
-                >
-                  <div
-                    className="h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border flex-shrink-0"
-                    style={{
-                      backgroundColor: u.color ? `${u.color}20` : 'rgba(16,185,129,0.2)',
-                      borderColor: u.color ? `${u.color}30` : 'rgba(16,185,129,0.1)',
-                      color: u.color || 'var(--primary)'
-                    }}
-                  >
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <span className="font-semibold" style={{ color: u.color }}>
-                      {u.name}
-                    </span>
-                    {u.originalName && u.originalName !== u.name && (
-                      <span className="text-[9px] text-muted-foreground/60 leading-none mt-0.5">
-                        nome de criação: {u.originalName}
-                      </span>
-                    )}
-                  </div>
-                  {onEditUser && (
-                    <button
-                      type="button"
-                      onClick={() => onEditUser(u)}
-                      className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                      title="Editar participante"
-                    >
-                      ✏️
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label" htmlFor="new-user-name">
-              Nome do novo participante
+            <label className="label" htmlFor="edit-user-name">
+              Nome do participante
             </label>
             <input
-              id="new-user-name"
+              id="edit-user-name"
               className="input-field"
               type="text"
               placeholder="Ex: Maria"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              disabled={addUser.isPending}
+              disabled={editUser.isPending}
             />
           </div>
 
@@ -140,7 +110,7 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
                   )}
                   style={{ backgroundColor: color }}
                   onClick={() => setSelectedColor(color)}
-                  disabled={addUser.isPending}
+                  disabled={editUser.isPending}
                   title="Escolher cor pré-definida"
                 />
               ))}
@@ -161,11 +131,17 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
                   value={COLOR_PRESETS.includes(selectedColor) ? '#3b82f6' : selectedColor}
                   onChange={(e) => setSelectedColor(e.target.value)}
                   className="absolute inset-0 opacity-0 cursor-pointer"
-                  disabled={addUser.isPending}
+                  disabled={editUser.isPending}
                 />
               </label>
             </div>
           </div>
+
+          {user.originalName && user.originalName !== user.name && (
+            <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 border border-white/5">
+              Nome original de criação: <span className="font-semibold">{user.originalName}</span>
+            </div>
+          )}
 
           {error && (
             <p className="text-xs text-destructive bg-destructive/10 rounded-md px-3 py-2">
@@ -178,12 +154,12 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
               Cancelar
             </button>
             <button
-              id="btn-confirm-add-user"
+              id="btn-confirm-edit-user"
               type="submit"
               className="btn-primary flex-1"
-              disabled={addUser.isPending}
+              disabled={editUser.isPending}
             >
-              {addUser.isPending ? 'A adicionar...' : 'Adicionar'}
+              {editUser.isPending ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>

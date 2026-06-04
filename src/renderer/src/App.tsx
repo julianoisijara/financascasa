@@ -3,11 +3,12 @@ import { useAuthStatus, useFinanceData, useSaveData } from './hooks/useFinanceDa
 import OnboardingScreen from './components/onboarding/OnboardingScreen'
 import MainLayout from './components/layout/MainLayout'
 import LoginScreen from './components/auth/LoginScreen'
-import type { AppData } from '@shared/schema'
+import type { AppData, User } from '@shared/schema'
 import { generateYearData } from './lib/utils'
 import { v4 as uuidv4 } from 'uuid'
 import AddUserModal from './components/modals/AddUserModal'
 import AddYearModal from './components/modals/AddYearModal'
+import EditUserModal from './components/modals/EditUserModal'
 import { useTheme } from './hooks/useTheme'
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
 
   const [showAddUser, setShowAddUser] = useState(false)
   const [showAddYear, setShowAddYear] = useState(false)
+  const [userToEdit, setUserToEdit] = useState<User | null>(null)
 
   // Listen for menu events from main process
   useEffect(() => {
@@ -38,7 +40,15 @@ export default function App() {
     const newData: AppData = {
       version: '1.0.0',
       createdAt: new Date().toISOString(),
-      users: [{ id: uuidv4(), name: userName, color, createdAt: new Date().toISOString() }],
+      users: [
+        {
+          id: uuidv4(),
+          name: userName,
+          originalName: userName,
+          color,
+          createdAt: new Date().toISOString()
+        }
+      ],
       years: { [year]: generateYearData() }
     }
     await saveData.mutateAsync(newData)
@@ -63,9 +73,29 @@ export default function App() {
 
   return (
     <>
-      <MainLayout appData={appData} />
-      <AddUserModal open={showAddUser} onClose={() => setShowAddUser(false)} appData={appData} />
+      <MainLayout
+        appData={appData}
+        onManageUsers={() => setShowAddUser(true)}
+        onEditUser={setUserToEdit}
+      />
+      <AddUserModal
+        open={showAddUser}
+        onClose={() => setShowAddUser(false)}
+        appData={appData}
+        onEditUser={(u) => {
+          setShowAddUser(false)
+          setUserToEdit(u)
+        }}
+      />
       <AddYearModal open={showAddYear} onClose={() => setShowAddYear(false)} appData={appData} />
+      {userToEdit && (
+        <EditUserModal
+          open={!!userToEdit}
+          onClose={() => setUserToEdit(null)}
+          user={userToEdit}
+          appData={appData}
+        />
+      )}
     </>
   )
 }
