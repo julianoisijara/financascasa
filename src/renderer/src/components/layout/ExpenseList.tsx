@@ -43,6 +43,8 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
 
   if (filterCategory === 'extra') {
     expenses = expenses.filter((e) => !!e.debtToUserId)
+  } else if (filterCategory === 'no-extra') {
+    expenses = expenses.filter((e) => !e.debtToUserId)
   } else if (filterCategory !== 'all') {
     expenses = expenses.filter((e) => e.categoryId === filterCategory)
   }
@@ -72,7 +74,9 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
             <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
               {filterUserId ? 'Filtrado: ' : 'Total Mensal: '}
               {formatCurrency(
-                expenses.filter((e) => !e.debtToUserId).reduce((sum, e) => sum + e.amount, 0)
+                filterCategory === 'extra'
+                  ? expenses.reduce((sum, e) => sum + e.amount, 0)
+                  : expenses.filter((e) => !e.debtToUserId).reduce((sum, e) => sum + e.amount, 0)
               )}
             </span>
             {filterUserId && (
@@ -206,6 +210,16 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
                         nome de criação: {userObj.originalName}
                       </span>
                     )}
+                    {(() => {
+                      const extraPaid = monthData.expenses
+                        .filter(e => e.paidBy === p.userId && !!e.debtToUserId)
+                        .reduce((sum, e) => sum + e.amount, 0)
+                      return extraPaid > 0 ? (
+                        <span className="text-[10px] text-amber-500/80 mt-1 font-medium leading-none">
+                          ⚡ Extra: {formatCurrency(extraPaid)}
+                        </span>
+                      ) : null
+                    })()}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
@@ -234,6 +248,9 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
           >
             <option value="all" className="bg-background text-foreground">
               Todas as Despesas
+            </option>
+            <option value="no-extra" className="bg-background text-emerald-500 font-bold">
+              🏠 Nenhuma despesa extra
             </option>
             <option value="extra" className="bg-background text-amber-500 font-bold">
               ⚡ Somente Extras
