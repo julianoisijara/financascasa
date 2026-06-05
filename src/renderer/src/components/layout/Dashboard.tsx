@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import type { AppData, Expense, User } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
 
@@ -9,7 +9,7 @@ interface Props {
 
 type PeriodFilter = 'month' | 'year' | 'all'
 
-export default function Dashboard({ appData, onEditUser }: Props) {
+export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Element {
   const years = Object.keys(appData.years).sort((a, b) => Number(b) - Number(a))
   const currentYear = String(new Date().getFullYear())
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0')
@@ -22,6 +22,7 @@ export default function Dashboard({ appData, onEditUser }: Props) {
   const [filterUserId, setFilterUserId] = useState<string>('all')
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all') // 'all' | 'shared' | 'extra'
+  const [limit, setLimit] = useState<number | 'all'>(5)
 
   const categories = [...(appData.categories ?? [])].sort((a, b) =>
     a.name.localeCompare(b.name, 'pt-BR')
@@ -83,8 +84,71 @@ export default function Dashboard({ appData, onEditUser }: Props) {
   }
   const catEntries = Array.from(catTotals.entries()).sort((a, b) => b[1] - a[1])
 
-  // Top 5 most expensive
-  const top5 = [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 5)
+  // Group and sum expenses by category for top expenses display
+  interface GroupedCategory {
+    categoryId: string
+    categoryName: string
+    amount: number
+    isExtraOnly: boolean
+    hasExtra: boolean
+    expenseCount: number
+    userAmounts: { userId: string; name: string; amount: number; color?: string }[]
+  }
+
+  const categoryTotalsMap = new Map<string, GroupedCategory>()
+
+  for (const e of expenses) {
+    const catId = e.categoryId || 'sem-categoria'
+    const catName = categories.find((c) => c.id === e.categoryId)?.name ?? e.name ?? 'Sem categoria'
+    const isExtra = !!e.debtToUserId
+
+    let entry = categoryTotalsMap.get(catId)
+    if (!entry) {
+      entry = {
+        categoryId: catId,
+        categoryName: catName,
+        amount: 0,
+        isExtraOnly: true,
+        hasExtra: false,
+        expenseCount: 0,
+        userAmounts: []
+      }
+      categoryTotalsMap.set(catId, entry)
+    }
+
+    entry.amount += e.amount
+    entry.expenseCount += 1
+    if (isExtra) {
+      entry.hasExtra = true
+    } else {
+      entry.isExtraOnly = false
+    }
+
+    let userAmt = entry.userAmounts.find((ua) => ua.userId === e.paidBy)
+    if (!userAmt) {
+      const userObj = appData.users.find((u) => u.id === e.paidBy)
+      userAmt = {
+        userId: e.paidBy,
+        name: userObj?.name ?? '?',
+        amount: 0,
+        color: userObj?.color
+      }
+      entry.userAmounts.push(userAmt)
+    }
+    userAmt.amount += e.amount
+  }
+
+  // Sort by total amount descending and sort user contributions inside each category by amount descending
+  const sortedCategoryTotals = Array.from(categoryTotalsMap.values())
+    .map((cat) => {
+      cat.userAmounts.sort((a, b) => b.amount - a.amount)
+      return cat
+    })
+    .sort((a, b) => b.amount - a.amount)
+
+  // Apply dynamic limit
+  const limitValue = limit === 'all' ? sortedCategoryTotals.length : limit
+  const displayedCategories = sortedCategoryTotals.slice(0, limitValue)
 
   // Monthly evolution for selected year
   const monthlyData: { month: string; categories: Record<string, number>; total: number }[] = []
@@ -124,7 +188,7 @@ export default function Dashboard({ appData, onEditUser }: Props) {
     'bg-orange-500',
     'bg-indigo-500'
   ]
-  const getColorForCategory = (catName: string) => {
+  const getColorForCategory = (catName: string): string => {
     const idx = categories.findIndex((c) => c.name === catName)
     return catColors[(idx >= 0 ? idx : categories.length) % catColors.length]
   }
@@ -540,22 +604,41 @@ export default function Dashboard({ appData, onEditUser }: Props) {
             )}
           </div>
 
-          {/* Top 5 expenses */}
+          {/* Top expenses */}
           <div className="card p-5">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-              Top 5 Maiores Despesas
-            </p>
-            {top5.length === 0 ? (
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                {limit === 'all'
+                  ? 'Maiores Despesas por Categoria'
+                  : `Top ${limit} Maiores Despesas`}
+              </p>
+              <div className="flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/5 no-drag-region">
+                {([5, 10, 20, 'all'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => setLimit(opt)}
+                    className={cn(
+                      'px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer',
+                      limit === opt
+                        ? 'bg-primary text-primary-foreground shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                    )}
+                  >
+                    {opt === 'all' ? 'Tudo' : opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {displayedCategories.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-8">Sem dados</p>
             ) : (
               <div className="space-y-2.5">
-                {top5.map((e, idx) => {
-                  const catName =
-                    categories.find((c) => c.id === e.categoryId)?.name ?? e.name ?? 'Sem categoria'
-                  const isExtra = !!e.debtToUserId
+                {displayedCategories.map((cat, idx) => {
+                  const isExtra = cat.isExtraOnly
+                  const hasExtra = cat.hasExtra
                   return (
                     <div
-                      key={e.id}
+                      key={cat.categoryId}
                       className={cn(
                         'flex items-center gap-3 rounded-xl px-3 py-2.5 border transition-colors',
                         isExtra
@@ -573,18 +656,33 @@ export default function Dashboard({ appData, onEditUser }: Props) {
                             isExtra ? 'text-amber-300' : 'text-foreground/90'
                           )}
                         >
-                          {catName}
+                          {cat.categoryName}
+                          {hasExtra && !isExtra && (
+                            <span
+                              className="ml-1.5 text-[10px] text-amber-400"
+                              title="Contém despesas extras"
+                            >
+                              ⚡
+                            </span>
+                          )}
                           {isExtra && <span className="ml-1.5 text-[10px] text-amber-400">⚡</span>}
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          <strong
-                            style={{
-                              color: appData.users.find((u) => u.id === e.paidBy)?.color
-                            }}
-                          >
-                            {userMap.get(e.paidBy) ?? '?'}
-                          </strong>{' '}
-                          • {new Date(e.createdAt).toLocaleDateString('pt-BR')}
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                          {cat.userAmounts.map((ua, uIdx) => (
+                            <span key={ua.userId}>
+                              {uIdx > 0 && ', '}
+                              <strong style={{ color: ua.color }}>{ua.name}</strong>
+                              <span className="text-muted-foreground/60">
+                                {' '}
+                                ({formatCurrency(ua.amount)})
+                              </span>
+                            </span>
+                          ))}
+                          <span className="text-muted-foreground/60">
+                            {' '}
+                            • {cat.expenseCount}{' '}
+                            {cat.expenseCount === 1 ? 'lançamento' : 'lançamentos'}
+                          </span>
                         </p>
                       </div>
                       <span
@@ -593,7 +691,7 @@ export default function Dashboard({ appData, onEditUser }: Props) {
                           isExtra ? 'text-amber-400' : 'text-primary'
                         )}
                       >
-                        {formatCurrency(e.amount)}
+                        {formatCurrency(cat.amount)}
                       </span>
                     </div>
                   )
@@ -617,7 +715,7 @@ function SummaryCard({
   value: string
   icon: string
   accent: string
-}) {
+}): React.JSX.Element {
   const colors: Record<string, string> = {
     emerald:
       'from-emerald-500/15 to-emerald-500/5 border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.08)]',
