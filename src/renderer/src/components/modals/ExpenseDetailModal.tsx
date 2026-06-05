@@ -248,7 +248,7 @@ export default function ExpenseDetailModal({
 
             {isDebtExpense && debtor && (
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 text-center">
-                <p className="text-xs text-amber-200/80">
+                <p className="text-xs text-amber-800 dark:text-amber-200/80">
                   Esta despesa será paga integralmente por{' '}
                   <strong style={{ color: debtor.color || 'var(--amber-400)' }}>
                     {debtor.name}

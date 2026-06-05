@@ -213,7 +213,7 @@ export default function Settings() {
               <li className="flex gap-2">
                 <span className="text-amber-400 mt-0.5">•</span>
                 <span>
-                  Após alterar, <strong className="text-amber-300/80">reinicie o aplicativo</strong>{' '}
+                  Após alterar, <strong className="text-amber-800 dark:text-amber-300/80">reinicie o aplicativo</strong>{' '}
                   para garantir que os dados carreguem corretamente.
                 </span>
               </li>

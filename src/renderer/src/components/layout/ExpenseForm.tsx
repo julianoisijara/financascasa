@@ -215,7 +215,7 @@ export default function ExpenseForm({ appData, year, month }: Props) {
               disabled={addExpense.isPending}
               className="h-4 w-4 rounded border-amber-500/40 text-amber-500 focus:ring-amber-500/50 cursor-pointer accent-amber-500"
             />
-            <span className="text-xs font-semibold text-amber-300">Despesa a ser paga por</span>
+            <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">Despesa a ser paga por</span>
           </label>
           {isDebt && (
             <select

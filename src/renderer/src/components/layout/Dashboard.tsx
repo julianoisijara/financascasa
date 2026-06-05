@@ -653,7 +653,7 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
                         <p
                           className={cn(
                             'text-sm font-medium truncate',
-                            isExtra ? 'text-amber-300' : 'text-foreground/90'
+                            isExtra ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/90'
                           )}
                         >
                           {cat.categoryName}

@@ -125,10 +125,10 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
               )
             })}
           </div>
-          <div className="pt-3 border-t border-emerald-500/10 mt-4 flex items-center justify-between text-xs text-emerald-100/50">
+          <div className="pt-3 border-t border-emerald-500/10 mt-4 flex items-center justify-between text-xs text-emerald-800/60 dark:text-emerald-100/50">
             <span>
               Cota ideal:{' '}
-              <strong className="text-emerald-100 font-medium">
+              <strong className="text-emerald-900 dark:text-emerald-100 font-medium">
                 {formatCurrency(summary.fairShare)}
               </strong>
             </span>
@@ -215,7 +215,7 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
                         .filter(e => e.paidBy === p.userId && !!e.debtToUserId)
                         .reduce((sum, e) => sum + e.amount, 0)
                       return extraPaid > 0 ? (
-                        <span className="text-[10px] text-amber-500/80 mt-1 font-medium leading-none">
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium leading-none">
                           ⚡ Extra: {formatCurrency(extraPaid)}
                         </span>
                       ) : null
@@ -320,7 +320,7 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
                     <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/20">
                       ⚡ Valor Extra
                     </span>
-                    <span className="text-[10px] text-amber-300/70">
+                    <span className="text-[10px] text-amber-700/80 dark:text-amber-300/70">
                       <strong
                         style={{
                           color: appData.users.find((u) => u.id === expense.debtToUserId)?.color
@@ -345,7 +345,7 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
                       className={cn(
                         'text-base font-semibold truncate transition-colors',
                         isDebtExpense
-                          ? 'text-amber-300/90 group-hover:text-amber-200'
+                          ? 'text-amber-700 dark:text-amber-300/90 group-hover:text-amber-600 dark:group-hover:text-amber-200'
                           : 'text-foreground/90 group-hover:text-primary'
                       )}
                     >
