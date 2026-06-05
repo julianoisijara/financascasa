@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { AppData, User } from '@shared/schema'
+import type { AppData } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
 import { useDeleteExpense } from '../../hooks/useFinanceData'
 import { calculateSettlements } from '../../lib/calculations'
@@ -9,12 +9,11 @@ interface Props {
   appData: AppData
   year: string
   month: string
-  onEditUser?: (user: User) => void
 }
 
 type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
 
-export default function ExpenseList({ appData, year, month, onEditUser }: Props) {
+export default function ExpenseList({ appData, year, month }: Props) {
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState<string>('all')
@@ -191,19 +190,6 @@ export default function ExpenseList({ appData, year, month, onEditUser }: Props)
                       >
                         {p.userName}
                       </span>
-                      {onEditUser && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (userObj) onEditUser(userObj)
-                          }}
-                          className="text-xs text-muted-foreground hover:text-primary transition-colors p-0.5 rounded hover:bg-white/5 cursor-pointer"
-                          title="Editar participante"
-                        >
-                          ✏️
-                        </button>
-                      )}
                     </div>
                     {userObj?.originalName && userObj.originalName !== userObj.name && (
                       <span className="text-[9px] text-muted-foreground/60 truncate mt-0.5 font-medium leading-none">

@@ -58,7 +58,6 @@ export default function MainLayout({ appData, onManageUsers, onEditUser }: Props
             appData={appData}
             year={selectedYear}
             month={selectedMonth}
-            onEditUser={onEditUser}
           />
 
           {/* Column 3 — Add expense form */}
