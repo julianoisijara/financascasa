@@ -13,16 +13,18 @@ echo ""
 APP_PATH=""
 
 # Procura o aplicativo nos locais comuns
-if [ -d "/Applications/Finanças.app" ]; then
+if [ -d "/Applications/Financas.app" ]; then
+    APP_PATH="/Applications/Financas.app"
+elif [ -d "/Applications/Finanças.app" ]; then
     APP_PATH="/Applications/Finanças.app"
+elif [ -d "./Financas.app" ]; then
+    APP_PATH="./Financas.app"
 elif [ -d "./Finanças.app" ]; then
     APP_PATH="./Finanças.app"
-elif [ -d "./dist/mac/Finanças.app" ]; then
-    APP_PATH="./dist/mac/Finanças.app"
+elif [ -d "./dist/mac-arm64/Financas.app" ]; then
+    APP_PATH="./dist/mac-arm64/Financas.app"
 elif [ -d "./dist/mac-arm64/Finanças.app" ]; then
     APP_PATH="./dist/mac-arm64/Finanças.app"
-elif [ -d "./dist/mac-x64/Finanças.app" ]; then
-    APP_PATH="./dist/mac-x64/Finanças.app"
 fi
 
 if [ -n "$APP_PATH" ]; then

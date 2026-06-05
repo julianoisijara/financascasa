@@ -1,5 +1,5 @@
 appId: com.electron.app
-productName: Finanças
+productName: Financas
 directories:
   buildResources: build
 files:
@@ -24,6 +24,8 @@ nsis:
 mac:
   identity: null
   notarize: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
   target:
     - target: dmg
       arch:

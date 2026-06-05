@@ -1,5 +1,6 @@
 {
   "name": "financas",
+  "productName": "Finanças",
   "version": "1.0.0",
   "description": "Programa de finanças para controle financeiro",
   "main": "./out/main/index.js",

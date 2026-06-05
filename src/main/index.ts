@@ -4,7 +4,6 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipcHandlers'
 
-// Force the app name to be "Finanças" so the macOS application menu and dock displays it correctly
 app.name = 'Finanças'
 
 let mainWindow: BrowserWindow | null = null
