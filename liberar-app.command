@@ -21,6 +21,8 @@ elif [ -d "./dist/mac/Finanças.app" ]; then
     APP_PATH="./dist/mac/Finanças.app"
 elif [ -d "./dist/mac-arm64/Finanças.app" ]; then
     APP_PATH="./dist/mac-arm64/Finanças.app"
+elif [ -d "./dist/mac-x64/Finanças.app" ]; then
+    APP_PATH="./dist/mac-x64/Finanças.app"
 fi
 
 if [ -n "$APP_PATH" ]; then
