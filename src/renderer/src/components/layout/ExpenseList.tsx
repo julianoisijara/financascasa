@@ -144,6 +144,9 @@ export default function ExpenseList({ appData, year, month }: Props) {
           {summary.participants.map((p) => {
             const userObj = appData.users.find((u) => u.id === p.userId)
             const userColor = userObj?.color
+            const extraPaid = monthData.expenses
+              .filter((e) => e.paidBy === p.userId && !!e.debtToUserId)
+              .reduce((sum, e) => sum + e.amount, 0)
             return (
               <button
                 key={p.userId}
@@ -196,20 +199,15 @@ export default function ExpenseList({ appData, year, month }: Props) {
                         nome de criação: {userObj.originalName}
                       </span>
                     )}
-                    {(() => {
-                      const extraPaid = monthData.expenses
-                        .filter(e => e.paidBy === p.userId && !!e.debtToUserId)
-                        .reduce((sum, e) => sum + e.amount, 0)
-                      return extraPaid > 0 ? (
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium leading-none">
-                          ⚡ Extra: {formatCurrency(extraPaid)}
-                        </span>
-                      ) : null
-                    })()}
+                    {extraPaid > 0 && (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-medium leading-none">
+                        ⚡ Extra: {formatCurrency(extraPaid)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid)}</div>
+                  <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid - extraPaid)}</div>
                   <div
                     className={`text-xs font-medium mt-0.5 ${p.balance >= 0 ? 'text-emerald-400' : 'text-red-400/90'}`}
                   >
