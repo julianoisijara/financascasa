@@ -23,6 +23,7 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all') // 'all' | 'shared' | 'extra'
   const [limit, setLimit] = useState<number | 'all'>(5)
+  const [catPage, setCatPage] = useState(0)
 
   const categories = [...(appData.categories ?? [])].sort((a, b) =>
     a.name.localeCompare(b.name, 'pt-BR')
@@ -65,7 +66,10 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
   }
 
   // Calculations
-  const totalGeral = expenses.reduce((s, e) => s + e.amount, 0)
+  const totalGeral =
+    filterType === 'extra'
+      ? expenses.reduce((s, e) => s + e.amount, 0)
+      : expenses.filter((e) => !e.debtToUserId).reduce((s, e) => s + e.amount, 0)
   const totalShared = expenses.filter((e) => !e.debtToUserId).reduce((s, e) => s + e.amount, 0)
   const totalExtra = expenses.filter((e) => !!e.debtToUserId).reduce((s, e) => s + e.amount, 0)
   const expenseCount = expenses.length
@@ -73,16 +77,11 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
   // Per-user breakdown
   const userTotals = new Map<string, number>()
   for (const e of expenses) {
+    const isExtra = !!e.debtToUserId
+    if (filterType !== 'extra' && isExtra) continue
+
     userTotals.set(e.paidBy, (userTotals.get(e.paidBy) ?? 0) + e.amount)
   }
-
-  // Per-category breakdown
-  const catTotals = new Map<string, number>()
-  for (const e of expenses) {
-    const catName = categories.find((c) => c.id === e.categoryId)?.name ?? 'Sem categoria'
-    catTotals.set(catName, (catTotals.get(catName) ?? 0) + e.amount)
-  }
-  const catEntries = Array.from(catTotals.entries()).sort((a, b) => b[1] - a[1])
 
   // Group and sum expenses by category for top expenses display
   interface GroupedCategory {
@@ -98,9 +97,10 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
   const categoryTotalsMap = new Map<string, GroupedCategory>()
 
   for (const e of expenses) {
-    const catId = e.categoryId || 'sem-categoria'
-    const catName = categories.find((c) => c.id === e.categoryId)?.name ?? e.name ?? 'Sem categoria'
     const isExtra = !!e.debtToUserId
+    const baseCatId = e.categoryId || 'sem-categoria'
+    const catId = baseCatId + (isExtra ? '-extra' : '-normal')
+    const catName = categories.find((c) => c.id === e.categoryId)?.name ?? e.name ?? 'Sem categoria'
 
     let entry = categoryTotalsMap.get(catId)
     if (!entry) {
@@ -108,8 +108,8 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
         categoryId: catId,
         categoryName: catName,
         amount: 0,
-        isExtraOnly: true,
-        hasExtra: false,
+        isExtraOnly: isExtra,
+        hasExtra: isExtra,
         expenseCount: 0,
         userAmounts: []
       }
@@ -118,11 +118,6 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
 
     entry.amount += e.amount
     entry.expenseCount += 1
-    if (isExtra) {
-      entry.hasExtra = true
-    } else {
-      entry.isExtraOnly = false
-    }
 
     let userAmt = entry.userAmounts.find((ua) => ua.userId === e.paidBy)
     if (!userAmt) {
@@ -146,9 +141,17 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
     })
     .sort((a, b) => b.amount - a.amount)
 
+  // Filter out extra categories unless 'extra' is specifically selected
+  const filteredCategoryTotals = sortedCategoryTotals.filter(cat => 
+    filterType === 'extra' ? cat.isExtraOnly : !cat.isExtraOnly
+  )
+
   // Apply dynamic limit
-  const limitValue = limit === 'all' ? sortedCategoryTotals.length : limit
-  const displayedCategories = sortedCategoryTotals.slice(0, limitValue)
+  const limitValue = limit === 'all' ? filteredCategoryTotals.length : limit
+  const displayedCategories = filteredCategoryTotals.slice(0, limitValue)
+
+  const maxCatPage = Math.max(0, Math.ceil(filteredCategoryTotals.length / 6) - 1)
+  const safeCatPage = Math.min(catPage, maxCatPage)
 
   // Monthly evolution for selected year
   const monthlyData: { month: string; categories: Record<string, number>; total: number }[] = []
@@ -160,8 +163,11 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
       if (filterUserId !== 'all') mExpenses = mExpenses.filter((e) => e.paidBy === filterUserId)
       if (filterCategoryId !== 'all')
         mExpenses = mExpenses.filter((e) => e.categoryId === filterCategoryId)
-      if (filterType === 'shared') mExpenses = mExpenses.filter((e) => !e.debtToUserId)
-      if (filterType === 'extra') mExpenses = mExpenses.filter((e) => !!e.debtToUserId)
+      if (filterType === 'extra') {
+        mExpenses = mExpenses.filter((e) => !!e.debtToUserId)
+      } else {
+        mExpenses = mExpenses.filter((e) => !e.debtToUserId)
+      }
 
       const mCats: Record<string, number> = {}
       let mTotal = 0
@@ -412,7 +418,6 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
                           <div className="space-y-2">
                             {Object.entries(d.categories)
                               .sort((a, b) => b[1] - a[1])
-                              .slice(0, 5)
                               .map(([catName, amount]) => (
                                 <div
                                   key={catName}
@@ -487,23 +492,56 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
 
           {/* Category breakdown */}
           <div className="card p-5">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-              Categorias
-            </p>
-            {catEntries.length === 0 ? (
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                Categorias
+              </p>
+              {filteredCategoryTotals.length > 6 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCatPage(p => Math.max(0, p - 1))}
+                    disabled={safeCatPage === 0}
+                    className="p-1 rounded-md hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-muted-foreground cursor-pointer"
+                  >
+                    ◀
+                  </button>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {safeCatPage + 1} / {maxCatPage + 1}
+                  </span>
+                  <button
+                    onClick={() => setCatPage(p => Math.min(maxCatPage, p + 1))}
+                    disabled={safeCatPage >= maxCatPage}
+                    className="p-1 rounded-md hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-muted-foreground cursor-pointer"
+                  >
+                    ▶
+                  </button>
+                </div>
+              )}
+            </div>
+            {filteredCategoryTotals.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-8">Sem dados</p>
             ) : (
               <div className="space-y-3">
-                {catEntries.slice(0, 6).map(([catName, amount]) => {
+                {filteredCategoryTotals.slice(safeCatPage * 6, (safeCatPage + 1) * 6).map((catInfo) => {
+                  const catName = catInfo.categoryName
+                  const amount = catInfo.amount
                   const pct = totalGeral > 0 ? (amount / totalGeral) * 100 : 0
                   return (
-                    <div key={catName}>
+                    <div key={catInfo.categoryId}>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-foreground/80 font-medium truncate flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            'font-medium truncate flex items-center gap-1.5',
+                            catInfo.isExtraOnly ? 'text-amber-700 dark:text-amber-300' : 'text-foreground/80'
+                          )}
+                        >
                           <span
                             className={cn('w-1.5 h-1.5 rounded-full', getColorForCategory(catName))}
                           ></span>
                           {catName}
+                          {catInfo.isExtraOnly && (
+                            <span className="text-[10px] text-amber-400">⚡</span>
+                          )}
                         </span>
                         <span className="text-muted-foreground font-medium ml-2 flex-shrink-0">
                           {pct.toFixed(0)}%
@@ -635,7 +673,6 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
               <div className="space-y-2.5">
                 {displayedCategories.map((cat, idx) => {
                   const isExtra = cat.isExtraOnly
-                  const hasExtra = cat.hasExtra
                   return (
                     <div
                       key={cat.categoryId}
@@ -657,14 +694,6 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
                           )}
                         >
                           {cat.categoryName}
-                          {hasExtra && !isExtra && (
-                            <span
-                              className="ml-1.5 text-[10px] text-amber-400"
-                              title="Contém despesas extras"
-                            >
-                              ⚡
-                            </span>
-                          )}
                           {isExtra && <span className="ml-1.5 text-[10px] text-amber-400">⚡</span>}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
