@@ -139,7 +139,7 @@ export default function ExpenseDetailModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm mx-4 card p-6 space-y-5 animate-slide-in flex flex-col max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-sm mx-4 card bg-popover dark:bg-popover p-6 space-y-5 animate-slide-in flex flex-col max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

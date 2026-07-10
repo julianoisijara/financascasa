@@ -30,7 +30,7 @@ export default function RecurrenceModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm mx-4 card p-6 space-y-5 animate-slide-in"
+        className="w-full max-w-sm mx-4 card bg-popover dark:bg-popover p-6 space-y-5 animate-slide-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -61,20 +61,20 @@ export default function RecurrenceModal({
                 className={cn(
                   'flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors text-left',
                   isCurrent
-                    ? 'border-white/5 bg-white/[0.02] text-muted-foreground cursor-not-allowed'
+                    ? 'border-border dark:border-white/[0.08] bg-muted/40 dark:bg-white/[0.02] text-muted-foreground cursor-not-allowed'
                     : isPicked
-                      ? 'border-primary/40 bg-primary/10 text-foreground'
-                      : 'border-white/5 bg-white/[0.02] text-muted-foreground hover:border-white/10 hover:text-foreground'
+                      ? 'border-primary/50 bg-primary/10 dark:bg-primary/20 text-foreground shadow-sm'
+                      : 'border-border dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.05] text-foreground/80 hover:border-primary/40 hover:bg-primary/5 dark:hover:bg-primary/15 hover:text-foreground'
                 )}
               >
                 <span
                   className={cn(
                     'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
                     isCurrent
-                      ? 'border-white/10'
+                      ? 'border-muted-foreground/30'
                       : isPicked
                         ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-white/20'
+                        : 'border-muted-foreground/40 dark:border-white/25 bg-background dark:bg-white/[0.03]'
                   )}
                 >
                   {isPicked && !isCurrent && (
