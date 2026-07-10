@@ -27,6 +27,21 @@ export default function ExpenseForm({ appData, year, month }: Props) {
   const [touched, setTouched] = useState(false)
   const [recurringMonths, setRecurringMonths] = useState<string[]>([])
   const [showRecurrence, setShowRecurrence] = useState(false)
+  // Target month/year the expense will be launched into (defaults to the app's current selection)
+  const [targetYear, setTargetYear] = useState(year)
+  const [targetMonth, setTargetMonth] = useState(month)
+
+  // Follow the app's month/year when the user navigates it in the sidebar (reset during render)
+  const [selectionKey, setSelectionKey] = useState(`${year}-${month}`)
+  if (selectionKey !== `${year}-${month}`) {
+    setSelectionKey(`${year}-${month}`)
+    setTargetYear(year)
+    setTargetMonth(month)
+    setRecurringMonths([])
+  }
+
+  const availableYears = Object.keys(appData.years).sort()
+  const monthOptions = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
 
   const categories = [...(appData.categories ?? [])].sort((a, b) =>
     a.name.localeCompare(b.name, 'pt-BR')
@@ -62,8 +77,8 @@ export default function ExpenseForm({ appData, year, month }: Props) {
       return setError('O devedor não pode ser a mesma pessoa que pagou.')
 
     await addExpense.mutateAsync({
-      year,
-      month,
+      year: targetYear,
+      month: targetMonth,
       recurringMonths,
       expense: {
         description: description.trim(),
@@ -114,6 +129,45 @@ export default function ExpenseForm({ appData, year, month }: Props) {
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+        {/* Target month / year */}
+        <div>
+          <label className="label">Mês / Ano</label>
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              id="expense-month"
+              className="input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10"
+              value={targetMonth}
+              onChange={(e) => {
+                setTargetMonth(e.target.value)
+                setRecurringMonths([])
+              }}
+              disabled={addExpense.isPending}
+            >
+              {monthOptions.map((m) => (
+                <option key={m} value={m}>
+                  {getMonthName(m)}
+                </option>
+              ))}
+            </select>
+            <select
+              id="expense-year"
+              className="input-field cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOThhM2EyIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZD0iTTE5IDlsLTcgNy03LTciLz48L3N2Zz4=')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat pr-10"
+              value={targetYear}
+              onChange={(e) => {
+                setTargetYear(e.target.value)
+                setRecurringMonths([])
+              }}
+              disabled={addExpense.isPending}
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Category */}
         <div>
           <label className="label" htmlFor="expense-category">
@@ -347,8 +401,8 @@ export default function ExpenseForm({ appData, year, month }: Props) {
 
       {showRecurrence && (
         <RecurrenceModal
-          year={year}
-          currentMonth={month}
+          year={targetYear}
+          currentMonth={targetMonth}
           selected={recurringMonths}
           onClose={() => setShowRecurrence(false)}
           onConfirm={(months) => setRecurringMonths(months)}
