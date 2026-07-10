@@ -58,31 +58,41 @@ export function useAddExpense() {
     mutationFn: async ({
       year,
       month,
-      expense
+      expense,
+      recurringMonths
     }: {
       year: string
       month: string
       expense: Omit<Expense, 'id' | 'createdAt'>
+      recurringMonths?: string[]
     }) => {
       const current = queryClient.getQueryData<AppData>(QUERY_KEY)
       if (!current) throw new Error('No data loaded')
 
-      const newExpense: Expense = {
-        ...expense,
-        id: uuidv4(),
-        createdAt: new Date().toISOString()
+      // Target months: current month plus any recurring months (deduped)
+      const targetMonths = Array.from(new Set([month, ...(recurringMonths ?? [])]))
+      const createdAt = new Date().toISOString()
+
+      const yearData = { ...(current.years[year] ?? generateYearData()) }
+      for (const m of targetMonths) {
+        // Each expense records the other months in its recurrence group
+        const siblings = targetMonths.filter((x) => x !== m)
+        const newExpense: Expense = {
+          ...expense,
+          id: uuidv4(),
+          createdAt,
+          recurringMonths: siblings.length > 0 ? siblings : undefined
+        }
+        yearData[m] = {
+          expenses: [...(yearData[m]?.expenses ?? []), newExpense]
+        }
       }
 
       const updated: AppData = {
         ...current,
         years: {
           ...current.years,
-          [year]: {
-            ...(current.years[year] ?? generateYearData()),
-            [month]: {
-              expenses: [...(current.years[year]?.[month]?.expenses ?? []), newExpense]
-            }
-          }
+          [year]: yearData
         }
       }
 

@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import type { Expense, User } from '@shared/schema'
-import { formatCurrency, maskCurrencyInput, parseCurrencyInput, cn } from '../../lib/utils'
-import { useEditExpense, useAddCategory } from '../../hooks/useFinanceData'
+import {
+  formatCurrency,
+  maskCurrencyInput,
+  parseCurrencyInput,
+  cn,
+  getMonthName
+} from '../../lib/utils'
+import { useEditExpense, useAddExpense, useAddCategory } from '../../hooks/useFinanceData'
 import AddCategoryModal from './AddCategoryModal'
+import RecurrenceModal from './RecurrenceModal'
 
 interface Props {
   expense: Expense
@@ -38,8 +45,11 @@ export default function ExpenseDetailModal({
   const [paidBy, setPaidBy] = useState(expense.paidBy)
   const [categoryId, setCategoryId] = useState(expense.categoryId ?? '')
   const [showAddCategory, setShowAddCategory] = useState(false)
+  const [recurringMonths, setRecurringMonths] = useState<string[]>(expense.recurringMonths ?? [])
+  const [showRecurrence, setShowRecurrence] = useState(false)
 
   const editExpense = useEditExpense()
+  const addExpense = useAddExpense()
   const addCategory = useAddCategory()
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -96,9 +106,30 @@ export default function ExpenseDetailModal({
         description: description.trim(),
         amount,
         paidBy,
-        categoryId: categoryId || undefined
+        categoryId: categoryId || undefined,
+        recurringMonths: recurringMonths.length > 0 ? recurringMonths : undefined
       }
     })
+
+    // Replicate into months newly added to the recurrence (skip ones already replicated)
+    const originalMonths = expense.recurringMonths ?? []
+    const newMonths = recurringMonths.filter((m) => !originalMonths.includes(m))
+    if (newMonths.length > 0) {
+      const [firstMonth, ...restMonths] = newMonths
+      await addExpense.mutateAsync({
+        year,
+        month: firstMonth,
+        recurringMonths: restMonths,
+        expense: {
+          description: description.trim(),
+          amount,
+          paidBy,
+          categoryId,
+          debtToUserId: expense.debtToUserId
+        }
+      })
+    }
+
     setIsEditing(false)
   }
 
@@ -187,6 +218,51 @@ export default function ExpenseDetailModal({
                   required
                 />
               </div>
+
+              {/* Recurrence */}
+              <button
+                type="button"
+                onClick={() => setShowRecurrence(true)}
+                disabled={editExpense.isPending || addExpense.isPending}
+                className={cn(
+                  'mt-2.5 flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors',
+                  recurringMonths.length > 0
+                    ? 'border-primary/40 bg-primary/10 text-foreground'
+                    : 'border-white/5 bg-white/[0.02] text-muted-foreground hover:border-white/10 hover:text-foreground'
+                )}
+              >
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0113.5-3.5L20 8M20 15a8 8 0 01-13.5 3.5L4 16"
+                  />
+                </svg>
+                <span className="flex-1 text-left">Recorrente</span>
+                {recurringMonths.length > 0 && (
+                  <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs font-bold text-primary">
+                    {recurringMonths.length} {recurringMonths.length === 1 ? 'mês' : 'meses'}
+                  </span>
+                )}
+              </button>
+
+              {recurringMonths.length > 0 && (
+                <p className="mt-2 text-xs font-medium text-muted-foreground">
+                  Também será lançada em:{' '}
+                  <span className="text-foreground">
+                    {[...recurringMonths]
+                      .sort()
+                      .map((m) => getMonthName(m))
+                      .join(', ')}
+                  </span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -297,6 +373,16 @@ export default function ExpenseDetailModal({
         <AddCategoryModal
           onClose={() => setShowAddCategory(false)}
           onSuccess={(id) => setCategoryId(id)}
+        />
+      )}
+
+      {showRecurrence && (
+        <RecurrenceModal
+          year={year}
+          currentMonth={month}
+          selected={recurringMonths}
+          onClose={() => setShowRecurrence(false)}
+          onConfirm={(months) => setRecurringMonths(months)}
         />
       )}
     </div>

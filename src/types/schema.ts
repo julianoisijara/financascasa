@@ -17,6 +17,7 @@ export interface Expense {
   debtToUserId?: string // User.id — if set, this is a personal debt (not shared). paidBy paid on behalf of debtToUserId
   updatedAt?: string // ISO 8601
   updatedBy?: string // User.id
+  recurringMonths?: string[] // months ("01".."12", same year) this expense was replicated into — excludes its own month
 }
 
 export interface MonthData {
