@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { Expense, User } from '@shared/schema'
+import { v4 as uuidv4 } from 'uuid'
+import type { Expense, User, YearData } from '@shared/schema'
 import {
   formatCurrency,
   maskCurrencyInput,
@@ -17,6 +18,7 @@ interface Props {
   categories: { id: string; name: string }[]
   year: string
   month: string
+  yearData: YearData
   onClose: () => void
   onDelete: () => void
   isDeleting: boolean
@@ -28,6 +30,7 @@ export default function ExpenseDetailModal({
   categories,
   year,
   month,
+  yearData,
   onClose,
   onDelete,
   isDeleting
@@ -45,7 +48,18 @@ export default function ExpenseDetailModal({
   const [paidBy, setPaidBy] = useState(expense.paidBy)
   const [categoryId, setCategoryId] = useState(expense.categoryId ?? '')
   const [showAddCategory, setShowAddCategory] = useState(false)
-  const [recurringMonths, setRecurringMonths] = useState<string[]>(expense.recurringMonths ?? [])
+  // Months (other than this one) that currently hold a copy of this recurring expense.
+  // Derived live from the data (never from a stored snapshot) so deleted copies stop showing.
+  const groupMonths = expense.recurrenceGroupId
+    ? Object.entries(yearData)
+        .filter(
+          ([m, data]) =>
+            m !== month &&
+            data.expenses.some((e) => e.recurrenceGroupId === expense.recurrenceGroupId)
+        )
+        .map(([m]) => m)
+    : []
+  const [recurringMonths, setRecurringMonths] = useState<string[]>(groupMonths)
   const [showRecurrence, setShowRecurrence] = useState(false)
 
   const editExpense = useEditExpense()
@@ -97,6 +111,9 @@ export default function ExpenseDetailModal({
     // Fallback to first user if we need an updatedBy ID
     const updaterId = users[0]?.id
 
+    // Reuse the existing recurrence group, or start one if the user just enabled recurrence
+    const groupId = expense.recurrenceGroupId ?? (recurringMonths.length > 0 ? uuidv4() : undefined)
+
     await editExpense.mutateAsync({
       year,
       month,
@@ -107,13 +124,12 @@ export default function ExpenseDetailModal({
         amount,
         paidBy,
         categoryId: categoryId || undefined,
-        recurringMonths: recurringMonths.length > 0 ? recurringMonths : undefined
+        recurrenceGroupId: groupId
       }
     })
 
-    // Replicate into months newly added to the recurrence (skip ones already replicated)
-    const originalMonths = expense.recurringMonths ?? []
-    const newMonths = recurringMonths.filter((m) => !originalMonths.includes(m))
+    // Replicate only into months that don't already hold a copy
+    const newMonths = recurringMonths.filter((m) => !groupMonths.includes(m))
     if (newMonths.length > 0) {
       const [firstMonth, ...restMonths] = newMonths
       await addExpense.mutateAsync({
@@ -125,7 +141,8 @@ export default function ExpenseDetailModal({
           amount,
           paidBy,
           categoryId,
-          debtToUserId: expense.debtToUserId
+          debtToUserId: expense.debtToUserId,
+          recurrenceGroupId: groupId
         }
       })
     }

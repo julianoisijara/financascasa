@@ -207,7 +207,9 @@ export default function ExpenseList({ appData, year, month }: Props) {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-bold text-foreground">{formatCurrency(p.paid - extraPaid)}</div>
+                  <div className="text-sm font-bold text-foreground">
+                    {formatCurrency(p.paid - extraPaid)}
+                  </div>
                   <div
                     className={`text-xs font-medium mt-0.5 ${p.balance >= 0 ? 'text-emerald-400' : 'text-red-400/90'}`}
                   >
@@ -383,6 +385,7 @@ export default function ExpenseList({ appData, year, month }: Props) {
           categories={categories}
           year={year}
           month={month}
+          yearData={appData.years[year] ?? {}}
           onClose={() => setSelectedExpenseId(null)}
           onDelete={async () => {
             await deleteExpense.mutateAsync({ year, month, expenseId: selectedExpense.id })

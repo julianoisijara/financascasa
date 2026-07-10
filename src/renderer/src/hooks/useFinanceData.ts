@@ -75,13 +75,11 @@ export function useAddExpense() {
 
       const yearData = { ...(current.years[year] ?? generateYearData()) }
       for (const m of targetMonths) {
-        // Each expense records the other months in its recurrence group
-        const siblings = targetMonths.filter((x) => x !== m)
+        // All copies share the recurrenceGroupId carried on `expense`
         const newExpense: Expense = {
           ...expense,
           id: uuidv4(),
-          createdAt,
-          recurringMonths: siblings.length > 0 ? siblings : undefined
+          createdAt
         }
         yearData[m] = {
           expenses: [...(yearData[m]?.expenses ?? []), newExpense]
