@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AppData, Expense, User } from '@shared/schema'
+import type { AppData, Expense, User, YearData } from '@shared/schema'
 import { generateYearData } from '../lib/utils'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -112,43 +112,73 @@ export function useEditExpense() {
       month,
       expenseId,
       updates,
-      userId
+      userId,
+      applyToMonths
     }: {
       year: string
       month: string
       expenseId: string
       updates: Partial<Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'updatedBy'>>
       userId: string
+      /**
+       * Outros meses do mesmo ano cujas cópias da recorrência devem receber as
+       * mesmas alterações. Só tem efeito se a despesa pertencer a um grupo de
+       * recorrência.
+       */
+      applyToMonths?: string[]
     }) => {
       const current = queryClient.getQueryData<AppData>(QUERY_KEY)
       if (!current) throw new Error('No data loaded')
 
-      const monthData = current.years[year]?.[month]
-      if (!monthData) throw new Error('Month not found')
+      const yearMonths = current.years[year]
+      const monthData = yearMonths?.[month]
+      if (!yearMonths || !monthData) throw new Error('Month not found')
+
+      const updatedAt = new Date().toISOString()
+      const target = monthData.expenses.find((e) => e.id === expenseId)
+      const groupId = updates.recurrenceGroupId ?? target?.recurrenceGroupId
 
       const expenses = monthData.expenses.map((e) => {
         if (e.id === expenseId) {
           return {
             ...e,
             ...updates,
-            updatedAt: new Date().toISOString(),
+            updatedAt,
             updatedBy: userId
           }
         }
         return e
       })
 
+      const nextYear: YearData = {
+        ...yearMonths,
+        [month]: {
+          ...monthData,
+          expenses
+        }
+      }
+
+      // Propaga a mesma edição para as cópias da recorrência nos meses pedidos
+      if (groupId && applyToMonths && applyToMonths.length > 0) {
+        for (const m of applyToMonths) {
+          const data = nextYear[m]
+          if (!data || m === month) continue
+          nextYear[m] = {
+            ...data,
+            expenses: data.expenses.map((e) =>
+              e.recurrenceGroupId === groupId
+                ? { ...e, ...updates, updatedAt, updatedBy: userId }
+                : e
+            )
+          }
+        }
+      }
+
       const updated: AppData = {
         ...current,
         years: {
           ...current.years,
-          [year]: {
-            ...current.years[year],
-            [month]: {
-              ...monthData,
-              expenses
-            }
-          }
+          [year]: nextYear
         }
       }
 

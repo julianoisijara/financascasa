@@ -1,7 +1,7 @@
 {
   "name": "finanas",
   "productName": "Finanças",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Programa de finanças para controle financeiro",
   "main": "./out/main/index.js",
   "author": "Juliano Isijara",

@@ -8,9 +8,12 @@ import {
   cn,
   getMonthName
 } from '../../lib/utils'
+import { findDuplicateExpenses } from '../../lib/duplicates'
 import { useEditExpense, useAddExpense, useAddCategory } from '../../hooks/useFinanceData'
 import AddCategoryModal from './AddCategoryModal'
 import RecurrenceModal from './RecurrenceModal'
+import DuplicateExpenseModal from './DuplicateExpenseModal'
+import RecurringEditScopeModal from './RecurringEditScopeModal'
 
 interface Props {
   expense: Expense
@@ -36,6 +39,10 @@ export default function ExpenseDetailModal({
   isDeleting
 }: Props) {
   const [isEditing, setIsEditing] = useState(false)
+  // Outros lançamentos do mês iguais ao que está sendo salvo
+  const [pendingDuplicates, setPendingDuplicates] = useState<Expense[]>([])
+  // Valor aguardando a resposta de "aplicar também nos meses futuros?"
+  const [pendingScopeAmount, setPendingScopeAmount] = useState<number | null>(null)
 
   // Edit form state
   const [description, setDescription] = useState(expense.description)
@@ -59,6 +66,8 @@ export default function ExpenseDetailModal({
         )
         .map(([m]) => m)
     : []
+  // Meses posteriores ao editado que já possuem uma cópia desta recorrência
+  const futureGroupMonths = groupMonths.filter((m) => m > month)
   const [recurringMonths, setRecurringMonths] = useState<string[]>(groupMonths)
   const [showRecurrence, setShowRecurrence] = useState(false)
 
@@ -108,6 +117,40 @@ export default function ExpenseDetailModal({
     const amount = parseCurrencyInput(amountRaw)
     if (amount <= 0) return
 
+    // Já existe outro lançamento igual neste mês? (ignora a própria despesa)
+    const duplicates = findDuplicateExpenses(
+      { categoryId, description, amount },
+      yearData[month]?.expenses ?? [],
+      expense.id
+    )
+    if (duplicates.length > 0) {
+      setPendingDuplicates(duplicates)
+      return
+    }
+
+    await requestSave(amount)
+  }
+
+  /**
+   * Se a despesa for recorrente e existirem cópias em meses futuros, pergunta
+   * antes se a edição deve valer também para esses meses.
+   */
+  const requestSave = async (amount: number): Promise<void> => {
+    const changed =
+      description.trim() !== expense.description.trim() ||
+      amount !== expense.amount ||
+      paidBy !== expense.paidBy ||
+      categoryId !== (expense.categoryId ?? '')
+
+    if (changed && futureGroupMonths.length > 0) {
+      setPendingScopeAmount(amount)
+      return
+    }
+
+    await performSave(amount, false)
+  }
+
+  const performSave = async (amount: number, applyToFuture: boolean): Promise<void> => {
     // Fallback to first user if we need an updatedBy ID
     const updaterId = users[0]?.id
 
@@ -125,7 +168,8 @@ export default function ExpenseDetailModal({
         paidBy,
         categoryId: categoryId || undefined,
         recurrenceGroupId: groupId
-      }
+      },
+      applyToMonths: applyToFuture ? futureGroupMonths : undefined
     })
 
     // Replicate only into months that don't already hold a copy
@@ -385,6 +429,43 @@ export default function ExpenseDetailModal({
           </>
         )}
       </div>
+
+      {pendingDuplicates.length > 0 && (
+        <DuplicateExpenseModal
+          count={pendingDuplicates.length}
+          categoryName={categories.find((c) => c.id === categoryId)?.name ?? ''}
+          description={description.trim()}
+          amount={parseCurrencyInput(amountRaw)}
+          month={month}
+          year={year}
+          isEdit
+          onCancel={() => setPendingDuplicates([])}
+          onConfirm={async () => {
+            setPendingDuplicates([])
+
+            await requestSave(parseCurrencyInput(amountRaw))
+          }}
+        />
+      )}
+
+      {pendingScopeAmount !== null && (
+        <RecurringEditScopeModal
+          month={month}
+          year={year}
+          futureMonths={futureGroupMonths}
+          onCancel={() => setPendingScopeAmount(null)}
+          onOnlyThis={async () => {
+            const amount = pendingScopeAmount
+            setPendingScopeAmount(null)
+            await performSave(amount, false)
+          }}
+          onAllFuture={async () => {
+            const amount = pendingScopeAmount
+            setPendingScopeAmount(null)
+            await performSave(amount, true)
+          }}
+        />
+      )}
 
       {showAddCategory && (
         <AddCategoryModal
