@@ -1,9 +1,18 @@
 import { useState } from 'react'
 import type { AppData } from '@shared/schema'
-import { formatCurrency, getMonthName, cn } from '../../lib/utils'
+import { formatCurrency, formatShortDate, getMonthName, cn } from '../../lib/utils'
 import { useDeleteExpense } from '../../hooks/useFinanceData'
 import { calculateSettlements } from '../../lib/calculations'
 import ExpenseDetailModal from '../modals/ExpenseDetailModal'
+import {
+  ViewModeSwitch,
+  ExpenseListaView,
+  ExpenseCartoesView,
+  ExpenseAgrupadaView,
+  type ViewMode,
+  type ExpenseRow,
+  type ExpenseGroup
+} from './ExpenseViews'
 
 interface Props {
   appData: AppData
@@ -11,16 +20,42 @@ interface Props {
   month: string
 }
 
-type SortOption = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
+type SortOption =
+  | 'date-desc'
+  | 'date-asc'
+  | 'amount-desc'
+  | 'amount-asc'
+  | 'user-asc'
+  | 'user-desc'
+  | 'category-asc'
+  | 'category-desc'
+
+const VIEW_MODE_KEY = 'expense-view-mode'
 
 export default function ExpenseList({ appData, year, month }: Props) {
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
   const [filterUserId, setFilterUserId] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [sortOption, setSortOption] = useState<SortOption>('date-desc')
+  // Modo de visualização das despesas (persistido entre sessões)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem(VIEW_MODE_KEY)
+    return saved === 'cartoes' || saved === 'agrupada' ? saved : 'lista'
+  })
   const deleteExpense = useDeleteExpense()
 
   const monthData = appData.years[year]?.[month] ?? { expenses: [] }
+  const categories = [...(appData.categories ?? [])].sort((a, b) =>
+    a.name.localeCompare(b.name, 'pt-BR')
+  )
+
+  // Rótulos usados nas ordenações alfabéticas (usuário e categoria)
+  const userNameOf = (userId: string): string =>
+    appData.users.find((u) => u.id === userId)?.name ?? ''
+  const categoryNameOf = (expense: (typeof monthData.expenses)[number]): string =>
+    categories.find((c) => c.id === expense.categoryId)?.name ?? expense.name ?? ''
+  const compareText = (a: string, b: string): number => a.localeCompare(b, 'pt-BR')
+
   const sortedExpenses = [...monthData.expenses].sort((a, b) => {
     switch (sortOption) {
       case 'date-desc':
@@ -31,6 +66,26 @@ export default function ExpenseList({ appData, year, month }: Props) {
         return b.amount - a.amount
       case 'amount-asc':
         return a.amount - b.amount
+      case 'user-asc':
+        return (
+          compareText(userNameOf(a.paidBy), userNameOf(b.paidBy)) ||
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      case 'user-desc':
+        return (
+          compareText(userNameOf(b.paidBy), userNameOf(a.paidBy)) ||
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      case 'category-asc':
+        return (
+          compareText(categoryNameOf(a), categoryNameOf(b)) ||
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+      case 'category-desc':
+        return (
+          compareText(categoryNameOf(b), categoryNameOf(a)) ||
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
       default:
         return 0
     }
@@ -48,12 +103,69 @@ export default function ExpenseList({ appData, year, month }: Props) {
     expenses = expenses.filter((e) => e.categoryId === filterCategory)
   }
   const summary = calculateSettlements(monthData, appData.users)
-  const userMap = new Map(appData.users.map((u) => [u.id, u.name]))
-  const categories = [...(appData.categories ?? [])].sort((a, b) =>
-    a.name.localeCompare(b.name, 'pt-BR')
-  )
 
   const selectedExpense = expenses.find((e) => e.id === selectedExpenseId) || null
+
+  const changeViewMode = (mode: ViewMode): void => {
+    localStorage.setItem(VIEW_MODE_KEY, mode)
+    setViewMode(mode)
+  }
+
+  // Modelo normalizado consumido pelas três visualizações
+  const rows: ExpenseRow[] = expenses.map((expense) => {
+    const payer = appData.users.find((u) => u.id === expense.paidBy)
+    const debtor = expense.debtToUserId
+      ? appData.users.find((u) => u.id === expense.debtToUserId)
+      : undefined
+    const payerName = payer?.name ?? '?'
+    return {
+      id: expense.id,
+      title:
+        categories.find((c) => c.id === expense.categoryId)?.name ??
+        expense.name ??
+        'Sem categoria',
+      description: expense.description ?? '',
+      amount: expense.amount,
+      date: formatShortDate(expense.createdAt),
+      payerName,
+      payerColor: payer?.color,
+      payerInitial: payerName.charAt(0).toUpperCase(),
+      isExtra: !!expense.debtToUserId,
+      debtorName: debtor?.name,
+      debtorColor: debtor?.color,
+      groupKey: expense.categoryId || 'sem-categoria'
+    }
+  })
+
+  // Agrupamento por categoria; os Valores Extra ficam num grupo próprio, fora do rateio
+  const sharedTotal = rows.filter((r) => !r.isExtra).reduce((sum, r) => sum + r.amount, 0)
+  const groupMap = new Map<string, ExpenseGroup>()
+  for (const row of rows) {
+    const key = row.isExtra ? '__extra__' : row.groupKey
+    let group = groupMap.get(key)
+    if (!group) {
+      group = {
+        key,
+        title: row.isExtra ? 'Valor Extra' : row.title,
+        rows: [],
+        total: 0,
+        pct: null,
+        isExtra: row.isExtra
+      }
+      groupMap.set(key, group)
+    }
+    group.rows.push(row)
+    group.total += row.amount
+  }
+  const groups: ExpenseGroup[] = [...groupMap.values()]
+    .map((g) => ({
+      ...g,
+      pct: g.isExtra || sharedTotal === 0 ? null : (g.total / sharedTotal) * 100
+    }))
+    .sort((a, b) => {
+      if (a.isExtra !== b.isExtra) return a.isExtra ? 1 : -1
+      return b.total - a.total
+    })
 
   return (
     <div className="flex flex-col flex-1 min-w-0 border-r border-white/5 bg-transparent backdrop-blur-sm">
@@ -266,12 +378,26 @@ export default function ExpenseList({ appData, year, month }: Props) {
             <option value="amount-asc" className="bg-background text-foreground">
               Menor valor
             </option>
+            <option value="user-asc" className="bg-background text-foreground">
+              Usuário (A-Z)
+            </option>
+            <option value="user-desc" className="bg-background text-foreground">
+              Usuário (Z-A)
+            </option>
+            <option value="category-asc" className="bg-background text-foreground">
+              Categoria (A-Z)
+            </option>
+            <option value="category-desc" className="bg-background text-foreground">
+              Categoria (Z-A)
+            </option>
           </select>
+
+          <ViewModeSwitch value={viewMode} onChange={changeViewMode} />
         </div>
       )}
 
       {/* Expense list */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-6 py-4">
         {expenses.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center bg-white/[0.01] rounded-2xl border border-white/5 border-dashed mx-2">
             <span className="text-4xl mb-3 opacity-50">📋</span>
@@ -286,95 +412,12 @@ export default function ExpenseList({ appData, year, month }: Props) {
                 : 'Use o painel ao lado para adicionar a primeira.'}
             </p>
           </div>
+        ) : viewMode === 'lista' ? (
+          <ExpenseListaView rows={rows} onSelect={setSelectedExpenseId} />
+        ) : viewMode === 'cartoes' ? (
+          <ExpenseCartoesView rows={rows} onSelect={setSelectedExpenseId} />
         ) : (
-          expenses.map((expense) => {
-            const isDebtExpense = !!expense.debtToUserId
-            return (
-              <button
-                key={expense.id}
-                id={`expense-${expense.id}`}
-                onClick={() => setSelectedExpenseId(expense.id)}
-                className={cn(
-                  'w-full text-left card px-5 py-4 transition-all duration-300 group animate-slide-in hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)]',
-                  isDebtExpense
-                    ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-400/50 hover:bg-amber-500/10'
-                    : 'hover:bg-white/[0.04] hover:border-primary/30'
-                )}
-              >
-                {isDebtExpense && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/20">
-                      ⚡ Valor Extra
-                    </span>
-                    <span className="text-[10px] text-amber-700/80 dark:text-amber-300/70">
-                      <strong
-                        style={{
-                          color: appData.users.find((u) => u.id === expense.debtToUserId)?.color
-                        }}
-                      >
-                        {userMap.get(expense.debtToUserId!)}
-                      </strong>{' '}
-                      deve a{' '}
-                      <strong
-                        style={{
-                          color: appData.users.find((u) => u.id === expense.paidBy)?.color
-                        }}
-                      >
-                        {userMap.get(expense.paidBy)}
-                      </strong>
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        'text-base font-semibold truncate transition-colors',
-                        isDebtExpense
-                          ? 'text-amber-700 dark:text-amber-300/90 group-hover:text-amber-600 dark:group-hover:text-amber-200'
-                          : 'text-foreground/90 group-hover:text-primary'
-                      )}
-                    >
-                      {categories.find((c) => c.id === expense.categoryId)?.name ??
-                        expense.name ??
-                        'Sem categoria'}
-                    </p>
-                    {expense.description && (
-                      <p className="text-sm text-muted-foreground truncate mt-1">
-                        {expense.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2.5">
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 bg-white/5 px-2 py-0.5 rounded">
-                        Pago por
-                      </span>
-                      <span
-                        className="text-xs font-semibold text-foreground/80"
-                        style={{
-                          color: appData.users.find((u) => u.id === expense.paidBy)?.color
-                        }}
-                      >
-                        {userMap.get(expense.paidBy) ?? '?'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0 text-right flex flex-col items-end">
-                    <p
-                      className={cn(
-                        'text-lg font-bold drop-shadow-sm',
-                        isDebtExpense ? 'text-amber-400' : 'text-primary'
-                      )}
-                    >
-                      {formatCurrency(expense.amount)}
-                    </p>
-                    <p className="text-[11px] font-medium text-muted-foreground mt-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                      Detalhes →
-                    </p>
-                  </div>
-                </div>
-              </button>
-            )
-          })
+          <ExpenseAgrupadaView groups={groups} onSelect={setSelectedExpenseId} />
         )}
       </div>
 
