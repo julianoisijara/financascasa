@@ -101,7 +101,20 @@ export default function Sidebar({
           <div className="relative flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-                <span className="text-xl">✨</span>
+                {/* Ícone de dinheiro (cifrão) */}
+                <svg
+                  className="h-[22px] w-[22px] text-primary"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9" fill="currentColor" fillOpacity="0.1" />
+                  <path d="M12 6.4v11.2" />
+                  <path d="M14.9 9.3c-.6-.9-1.7-1.4-2.9-1.4-1.7 0-3 .9-3 2.2 0 3 6 1.7 6 4.7 0 1.3-1.3 2.2-3.1 2.2-1.3 0-2.4-.5-3-1.4" />
+                </svg>
               </div>
               <div className="min-w-0">
                 <h1 className="text-base font-bold text-foreground tracking-tight truncate">
