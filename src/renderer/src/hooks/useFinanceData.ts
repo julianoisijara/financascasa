@@ -5,14 +5,93 @@ import { v4 as uuidv4 } from 'uuid'
 
 const QUERY_KEY = ['finance-data']
 
+/** Grava no local/nuvem e transforma falhas em erro (para o mutation.isError). */
+async function persist(data: AppData): Promise<void> {
+  const result = await window.electronAPI.writeData(data)
+  if (!result.success) {
+    throw new Error(result.error ?? 'Não foi possível salvar os dados.')
+  }
+}
+
+export type StorageMode = 'local' | 'gdrive'
+
+export interface DriveStatus {
+  success: boolean
+  mode: StorageMode
+  configured: boolean
+  connected: boolean
+  email?: string
+  credentialsFromBuild: boolean
+  clientId?: string
+  folderPath?: string
+  needsReconnect: boolean
+  fileName: string
+}
+
+export interface DriveFolder {
+  id: string
+  name: string
+  kind?: 'folder' | 'file'
+}
+
+export interface ReadStatus {
+  /** Sem internet: exibindo a última cópia sincronizada com o Drive */
+  offline: boolean
+  error?: string
+}
+
 declare global {
   interface Window {
     electronAPI: {
-      login: () => Promise<{ success: boolean }>
+      login: () => Promise<{ success: boolean; email?: string; error?: string; kind?: string }>
       logout: () => Promise<{ success: boolean }>
       isAuthenticated: () => Promise<{ authenticated: boolean }>
-      readData: () => Promise<{ success: boolean; data: AppData | null; error?: string }>
+      readData: () => Promise<{
+        success: boolean
+        data: AppData | null
+        error?: string
+        offline?: boolean
+      }>
       writeData: (data: AppData) => Promise<{ success: boolean; error?: string }>
+      // Google Drive
+      getDriveStatus: () => Promise<DriveStatus>
+      setDriveCredentials: (
+        clientId: string,
+        clientSecret?: string
+      ) => Promise<{ success: boolean; error?: string }>
+      cancelDriveConnect: () => Promise<{ success: boolean }>
+      listDriveFolders: (
+        parentId?: string
+      ) => Promise<{ success: boolean; folders?: DriveFolder[]; error?: string }>
+      createDriveFolder: (
+        parentId: string,
+        name: string
+      ) => Promise<{ success: boolean; folder?: DriveFolder; error?: string }>
+      setDriveFolder: (folderId: string) => Promise<{
+        success: boolean
+        folderPath?: string
+        result?: 'existing' | 'moved' | 'copied' | 'empty'
+        error?: string
+      }>
+      setDriveFile: (fileId: string) => Promise<{
+        success: boolean
+        folderPath?: string
+        fileName?: string
+        canEdit?: boolean
+        error?: string
+      }>
+      setStorageMode: (mode: StorageMode) => Promise<{
+        success: boolean
+        mode?: StorageMode
+        source?: 'local' | 'drive-existing' | 'uploaded-local' | 'empty'
+        error?: string
+      }>
+      downloadDriveToLocal: () => Promise<{
+        success: boolean
+        canceled?: boolean
+        path?: string
+        error?: string
+      }>
       getVersion: () => Promise<string>
       onMenuLogin: (callback: () => void) => void
       onMenuLogout: (callback: () => void) => void
@@ -31,14 +110,41 @@ declare global {
   }
 }
 
+const READ_STATUS_KEY = ['read-status']
+
 export function useFinanceData() {
+  const queryClient = useQueryClient()
   return useQuery<AppData | null>({
     queryKey: QUERY_KEY,
     queryFn: async () => {
       const result = await window.electronAPI.readData()
+      if (!result.success) {
+        throw new Error(result.error ?? 'Não foi possível carregar os dados.')
+      }
+      queryClient.setQueryData<ReadStatus>(READ_STATUS_KEY, {
+        offline: !!result.offline,
+        error: result.error
+      })
       return result.data
     },
     staleTime: 1000 * 60 * 5 // 5 minutes
+  })
+}
+
+/** Estado da última leitura (ex.: modo off-line com a cópia local do Drive). */
+export function useReadStatus() {
+  return useQuery<ReadStatus>({
+    queryKey: READ_STATUS_KEY,
+    queryFn: () => ({ offline: false }),
+    staleTime: Infinity
+  })
+}
+
+export function useDriveStatus() {
+  return useQuery<DriveStatus>({
+    queryKey: ['drive-status'],
+    queryFn: () => window.electronAPI.getDriveStatus(),
+    staleTime: 1000 * 30
   })
 }
 
@@ -96,7 +202,7 @@ export function useAddExpense() {
         }
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -184,7 +290,7 @@ export function useEditExpense() {
         }
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -224,7 +330,7 @@ export function useDeleteExpense() {
         }
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -254,7 +360,7 @@ export function useAddUser() {
         users: [...current.users, newUser]
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -300,7 +406,7 @@ export function useEditUser() {
         users: updatedUsers
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -327,7 +433,7 @@ export function useAddYear() {
         }
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -350,7 +456,7 @@ export function useAddCategory() {
         categories: [...(current.categories ?? []), newCategory]
       }
 
-      await window.electronAPI.writeData(updated)
+      await persist(updated)
       return updated
     },
     onSuccess: (data) => {
@@ -364,7 +470,7 @@ export function useSaveData() {
 
   return useMutation({
     mutationFn: async (data: AppData) => {
-      await window.electronAPI.writeData(data)
+      await persist(data)
       return data
     },
     onSuccess: (data) => {

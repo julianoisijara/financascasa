@@ -1,5 +1,4 @@
 import { ipcMain, app, dialog } from 'electron'
-import * as fs from 'fs'
 import * as fsp from 'fs/promises'
 import * as path from 'path'
 import type { AppData } from '../types/schema'
@@ -12,75 +11,124 @@ import {
   readFileSafe,
   writeFileSafe
 } from './fsSafe'
+import {
+  DATA_FILE_NAME,
+  getLocalDataFilePath,
+  getStorageMode,
+  readConfig,
+  updateConfig,
+  writeConfig,
+  type StorageMode
+} from './config'
+import * as gdrive from './googleDrive'
 
-const DATA_FILE_NAME = 'finance-data.json'
-const CONFIG_FILE_NAME = 'app-config.json'
+const DRIVE_BACKUP_FILE_NAME = 'finance-data.gdrive-backup.json'
 
-/** Reads the persisted app configuration (custom data path, etc.) */
-function getConfigPath(): string {
-  return path.join(app.getPath('userData'), CONFIG_FILE_NAME)
+/** Cópia local do último conteúdo sincronizado com o Drive (somente segurança). */
+function getDriveBackupPath(): string {
+  return path.join(app.getPath('userData'), DRIVE_BACKUP_FILE_NAME)
 }
 
-// The config file always lives in userData (never on a cloud mount), so plain
-// sync I/O is safe here — unlike the data file, which the user can point at
-// Google Drive / OneDrive.
-function readConfig(): { customDataDir?: string } {
+/** Um arquivo "{}" (ou parcial) equivale a "sem dados": leva ao onboarding. */
+function normalizeData(raw: string): AppData | null {
+  const parsed = JSON.parse(raw)
+  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.users)) return null
+  return parsed as AppData
+}
+
+async function readLocal(): Promise<{
+  success: boolean
+  data: AppData | null
+  error?: string
+}> {
+  const dataFilePath = getLocalDataFilePath()
   try {
-    const configPath = getConfigPath()
-    if (fs.existsSync(configPath)) {
-      return JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-    }
+    const rawData = await readFileSafe(dataFilePath)
+    return { success: true, data: normalizeData(rawData) }
   } catch (err) {
-    console.error('[Config] read error:', err)
+    if (errorCode(err) === 'ENOENT') {
+      return { success: true, data: null }
+    }
+    console.error('[IPC] local:read error:', err)
+    return { success: false, data: null, error: describeFsError(err) }
   }
-  return {}
 }
 
-function writeConfig(config: { customDataDir?: string }): void {
-  fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), 'utf-8')
-}
+async function readDrive(): Promise<{
+  success: boolean
+  data: AppData | null
+  error?: string
+  offline?: boolean
+}> {
+  try {
+    const raw = await gdrive.readDataFile()
+    if (raw === null) return { success: true, data: null }
+    const data = normalizeData(raw)
+    // Mantém a cópia de segurança em dia com o que está na nuvem
+    await writeFileSafe(getDriveBackupPath(), raw).catch(() => undefined)
+    return { success: true, data }
+  } catch (err) {
+    const driveErr = gdrive.toDriveError(err)
+    console.error('[IPC] drive:read error:', driveErr.message)
 
-/** Returns the resolved path to the finance-data.json file */
-function getDataFilePath(): string {
-  const config = readConfig()
-  if (config.customDataDir) {
-    return path.join(config.customDataDir, DATA_FILE_NAME)
+    // Sem internet: abre a última cópia sincronizada em modo somente leitura
+    if (driveErr.kind === 'offline') {
+      try {
+        const raw = await readFileSafe(getDriveBackupPath())
+        return { success: true, data: normalizeData(raw), offline: true, error: driveErr.message }
+      } catch {
+        /* sem backup local */
+      }
+    }
+    return { success: false, data: null, error: driveErr.message }
   }
-  return path.join(app.getPath('userData'), DATA_FILE_NAME)
 }
 
 export function registerIpcHandlers(): void {
-  // Auth handlers
+  // ─── Auth (Google Drive) ───
   ipcMain.handle('auth:login', async () => {
-    return { success: true }
-  })
-
-  ipcMain.handle('auth:logout', () => {
-    return { success: true }
-  })
-
-  ipcMain.handle('auth:check', async () => {
-    return { authenticated: true }
-  })
-
-  // Drive data handlers (now saving locally)
-  ipcMain.handle('drive:read', async () => {
-    const dataFilePath = getDataFilePath()
     try {
-      const rawData = await readFileSafe(dataFilePath)
-      return { success: true, data: JSON.parse(rawData) }
+      const { email } = await gdrive.connect()
+      return { success: true, email }
     } catch (err) {
-      if (errorCode(err) === 'ENOENT') {
-        return { success: true, data: null }
-      }
-      console.error('[IPC] local:read error:', err)
-      return { success: false, data: null, error: describeFsError(err) }
+      const e = gdrive.toDriveError(err)
+      return { success: false, error: e.message, kind: e.kind }
     }
   })
 
+  ipcMain.handle('auth:logout', async () => {
+    await gdrive.disconnect()
+    // Sem conta conectada o modo nuvem não funciona; volta para local.
+    updateConfig({ storageMode: 'local' })
+    return { success: true }
+  })
+
+  /** Local nunca precisa de login; nuvem precisa de uma conta conectada. */
+  ipcMain.handle('auth:check', async () => {
+    const mode = getStorageMode()
+    return { authenticated: mode === 'local' || gdrive.isConnected() }
+  })
+
+  // ─── Dados (roteados pelo modo de armazenamento) ───
+  ipcMain.handle('drive:read', async () => {
+    return getStorageMode() === 'gdrive' ? readDrive() : readLocal()
+  })
+
   ipcMain.handle('drive:write', async (_event, data: AppData) => {
+    const contents = JSON.stringify(data, null, 2)
+    if (getStorageMode() === 'gdrive') {
+      try {
+        await gdrive.writeDataFile(contents)
+        await writeFileSafe(getDriveBackupPath(), contents).catch(() => undefined)
+        return { success: true }
+      } catch (err) {
+        const e = gdrive.toDriveError(err)
+        console.error('[IPC] drive:write error:', e.message)
+        return { success: false, error: e.message }
+      }
+    }
     try {
-      await writeFileSafe(getDataFilePath(), JSON.stringify(data, null, 2))
+      await writeFileSafe(getLocalDataFilePath(), contents)
       return { success: true }
     } catch (err) {
       console.error('[IPC] local:write error:', err)
@@ -93,11 +141,145 @@ export function registerIpcHandlers(): void {
     return app.getVersion()
   })
 
+  // ─── Google Drive ───
+
+  ipcMain.handle('gdrive:status', () => {
+    return { success: true, mode: getStorageMode(), ...gdrive.getStatus() }
+  })
+
+  ipcMain.handle('gdrive:setCredentials', (_event, clientId: string, clientSecret?: string) => {
+    try {
+      gdrive.setCredentials(clientId, clientSecret)
+      return { success: true, ...gdrive.getStatus() }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  ipcMain.handle('gdrive:listFolders', async (_event, parentId?: string) => {
+    try {
+      return { success: true, folders: await gdrive.listEntries(parentId || 'root') }
+    } catch (err) {
+      return { success: false, error: gdrive.toDriveError(err).message }
+    }
+  })
+
+  ipcMain.handle('gdrive:createFolder', async (_event, parentId: string, name: string) => {
+    try {
+      return { success: true, folder: await gdrive.createFolder(parentId || 'root', name) }
+    } catch (err) {
+      return { success: false, error: gdrive.toDriveError(err).message }
+    }
+  })
+
+  ipcMain.handle('gdrive:setFile', async (_event, fileId: string) => {
+    try {
+      return { success: true, ...(await gdrive.setFile(fileId)) }
+    } catch (err) {
+      return { success: false, error: gdrive.toDriveError(err).message }
+    }
+  })
+
+  ipcMain.handle('gdrive:setFolder', async (_event, folderId: string) => {
+    try {
+      return { success: true, ...(await gdrive.setFolder(folderId)) }
+    } catch (err) {
+      return { success: false, error: gdrive.toDriveError(err).message }
+    }
+  })
+
+  ipcMain.handle('gdrive:cancelConnect', () => {
+    gdrive.cancelConnect()
+    return { success: true }
+  })
+
+  /**
+   * Troca o modo de armazenamento.
+   * Ao ativar o Drive:
+   * - se já existe finance-data.json na nuvem, ele passa a ser usado;
+   * - senão, os dados locais atuais (se houver) são enviados para o Drive.
+   */
+  ipcMain.handle('gdrive:setStorageMode', async (_event, mode: StorageMode) => {
+    if (mode === 'local') {
+      updateConfig({ storageMode: 'local' })
+      return { success: true, mode, source: 'local' as const }
+    }
+
+    if (!gdrive.isConnected()) {
+      return {
+        success: false,
+        error: 'Conecte sua conta Google antes de ativar o armazenamento na nuvem.'
+      }
+    }
+
+    try {
+      if (await gdrive.hasDataFile()) {
+        updateConfig({ storageMode: 'gdrive' })
+        return { success: true, mode, source: 'drive-existing' as const }
+      }
+
+      const localPath = getLocalDataFilePath()
+      let localRaw: string | null = null
+      try {
+        localRaw = await readFileSafe(localPath)
+        if (!normalizeData(localRaw)) localRaw = null
+      } catch (err) {
+        if (errorCode(err) !== 'ENOENT') {
+          return {
+            success: false,
+            error: `Não foi possível ler os dados locais para enviar à nuvem. ${describeFsError(err)}`
+          }
+        }
+      }
+
+      if (localRaw) {
+        await gdrive.writeDataFile(localRaw)
+        await writeFileSafe(getDriveBackupPath(), localRaw).catch(() => undefined)
+        updateConfig({ storageMode: 'gdrive' })
+        return { success: true, mode, source: 'uploaded-local' as const }
+      }
+
+      updateConfig({ storageMode: 'gdrive' })
+      return { success: true, mode, source: 'empty' as const }
+    } catch (err) {
+      const e = gdrive.toDriveError(err)
+      console.error('[IPC] gdrive:setStorageMode error:', e.message)
+      return { success: false, error: e.message }
+    }
+  })
+
+  /** Baixa o arquivo atual do Drive por cima do arquivo local (com confirmação). */
+  ipcMain.handle('gdrive:downloadToLocal', async () => {
+    try {
+      const raw = await gdrive.readDataFile()
+      if (raw === null) {
+        return { success: false, error: 'Não há dados no Google Drive para baixar.' }
+      }
+      const localPath = getLocalDataFilePath()
+      if (await pathExists(localPath)) {
+        const { response } = await dialog.showMessageBox({
+          type: 'warning',
+          buttons: ['Substituir', 'Cancelar'],
+          defaultId: 1,
+          cancelId: 1,
+          message: 'Substituir os dados locais?',
+          detail: `O arquivo em "${localPath}" será substituído pela versão que está no Google Drive.`
+        })
+        if (response !== 0) return { success: false, canceled: true }
+      }
+      await writeFileSafe(localPath, raw)
+      return { success: true, path: localPath }
+    } catch (err) {
+      const e = gdrive.toDriveError(err)
+      return { success: false, error: e.message }
+    }
+  })
+
   // ─── Settings: data file path management ───
 
   /** Returns the current data file path */
   ipcMain.handle('settings:getDataPath', () => {
-    return { success: true, path: getDataFilePath() }
+    return { success: true, path: getLocalDataFilePath() }
   })
 
   /** Returns the default data directory (userData) */
@@ -132,7 +314,7 @@ export function registerIpcHandlers(): void {
    * failing the whole switch — it is a valid file, just not materialised yet.
    */
   ipcMain.handle('settings:setDataDir', async (_event, newDir: string) => {
-    const oldPath = getDataFilePath()
+    const oldPath = getLocalDataFilePath()
     const newPath = path.join(newDir, DATA_FILE_NAME)
 
     try {
@@ -202,7 +384,7 @@ export function registerIpcHandlers(): void {
       }
 
       // Persist new directory in config only after the data file is in place.
-      writeConfig({ customDataDir: newDir })
+      updateConfig({ customDataDir: newDir })
 
       return { success: true, path: newPath, warning }
     } catch (err) {
@@ -214,8 +396,10 @@ export function registerIpcHandlers(): void {
   /** Resets back to the default userData directory */
   ipcMain.handle('settings:resetDataDir', () => {
     try {
-      writeConfig({}) // clear custom dir
-      return { success: true, path: getDataFilePath() }
+      const config = readConfig()
+      delete config.customDataDir
+      writeConfig(config)
+      return { success: true, path: getLocalDataFilePath() }
     } catch (err) {
       console.error('[IPC] settings:resetDataDir error:', err)
       return { success: false, error: describeFsError(err) }
