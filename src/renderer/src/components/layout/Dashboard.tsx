@@ -599,9 +599,9 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
                         <div
                           className="h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border"
                           style={{
-                            backgroundColor: userColor ? `${userColor}20` : 'rgba(16,185,129,0.2)',
-                            borderColor: userColor ? `${userColor}30` : 'rgba(16,185,129,0.1)',
-                            color: userColor || 'var(--primary)'
+                            backgroundColor: userColor ? `${userColor}20` : 'hsl(var(--primary) / 0.2)',
+                            borderColor: userColor ? `${userColor}30` : 'hsl(var(--primary) / 0.1)',
+                            color: userColor || 'hsl(var(--primary))'
                           }}
                         >
                           {name.charAt(0).toUpperCase()}
@@ -630,7 +630,7 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
                               className="h-full rounded-full transition-all duration-700"
                               style={{
                                 width: `${pct}%`,
-                                backgroundColor: userColor || 'var(--primary)'
+                                backgroundColor: userColor || 'hsl(var(--primary))'
                               }}
                             />
                           </div>

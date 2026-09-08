@@ -184,9 +184,9 @@ export default function Sidebar({
                   <div
                     className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm border flex-shrink-0"
                     style={{
-                      backgroundColor: user.color ? `${user.color}20` : 'rgba(16,185,129,0.2)',
-                      borderColor: user.color ? `${user.color}30` : 'rgba(16,185,129,0.1)',
-                      color: user.color || 'var(--primary)'
+                      backgroundColor: user.color ? `${user.color}20` : 'hsl(var(--primary) / 0.2)',
+                      borderColor: user.color ? `${user.color}30` : 'hsl(var(--primary) / 0.1)',
+                      color: user.color || 'hsl(var(--primary))'
                     }}
                   >
                     {user.name.charAt(0).toUpperCase()}

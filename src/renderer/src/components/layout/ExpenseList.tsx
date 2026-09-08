@@ -166,14 +166,14 @@ export default function ExpenseList({ appData, year, month }: Props) {
                     style={
                       filterUserId === p.userId
                         ? {
-                            backgroundColor: userColor || 'var(--primary)',
-                            borderColor: userColor || 'var(--primary)',
+                            backgroundColor: userColor || 'hsl(var(--primary))',
+                            borderColor: userColor || 'hsl(var(--primary))',
                             color: '#ffffff'
                           }
                         : {
-                            backgroundColor: userColor ? `${userColor}20` : 'rgba(16,185,129,0.2)',
-                            borderColor: userColor ? `${userColor}30` : 'rgba(16,185,129,0.1)',
-                            color: userColor || 'var(--primary)'
+                            backgroundColor: userColor ? `${userColor}20` : 'hsl(var(--primary) / 0.2)',
+                            borderColor: userColor ? `${userColor}30` : 'hsl(var(--primary) / 0.1)',
+                            color: userColor || 'hsl(var(--primary))'
                           }
                     }
                   >
@@ -185,7 +185,7 @@ export default function ExpenseList({ appData, year, month }: Props) {
                         className="text-sm font-semibold truncate"
                         style={
                           filterUserId === p.userId
-                            ? { color: 'var(--foreground)' }
+                            ? { color: 'hsl(var(--foreground))' }
                             : userColor
                               ? { color: userColor }
                               : undefined
