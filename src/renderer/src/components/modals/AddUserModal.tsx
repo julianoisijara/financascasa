@@ -75,9 +75,9 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
                   <div
                     className="h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border flex-shrink-0"
                     style={{
-                      backgroundColor: u.color ? `${u.color}20` : 'rgba(16,185,129,0.2)',
-                      borderColor: u.color ? `${u.color}30` : 'rgba(16,185,129,0.1)',
-                      color: u.color || 'var(--primary)'
+                      backgroundColor: u.color ? `${u.color}20` : 'hsl(var(--primary) / 0.2)',
+                      borderColor: u.color ? `${u.color}30` : 'hsl(var(--primary) / 0.1)',
+                      color: u.color || 'hsl(var(--primary))'
                     }}
                   >
                     {u.name.charAt(0).toUpperCase()}
