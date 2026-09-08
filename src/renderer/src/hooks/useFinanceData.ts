@@ -11,8 +11,8 @@ declare global {
       login: () => Promise<{ success: boolean }>
       logout: () => Promise<{ success: boolean }>
       isAuthenticated: () => Promise<{ authenticated: boolean }>
-      readData: () => Promise<{ success: boolean; data: AppData | null }>
-      writeData: (data: AppData) => Promise<{ success: boolean }>
+      readData: () => Promise<{ success: boolean; data: AppData | null; error?: string }>
+      writeData: (data: AppData) => Promise<{ success: boolean; error?: string }>
       getVersion: () => Promise<string>
       onMenuLogin: (callback: () => void) => void
       onMenuLogout: (callback: () => void) => void
@@ -23,8 +23,10 @@ declare global {
       getDataPath: () => Promise<{ success: boolean; path: string }>
       getDefaultDataDir: () => Promise<{ success: boolean; path: string }>
       chooseDataDir: () => Promise<{ success: boolean; canceled?: boolean; path?: string }>
-      setDataDir: (dir: string) => Promise<{ success: boolean; path?: string; error?: string }>
-      resetDataDir: () => Promise<{ success: boolean; path?: string }>
+      setDataDir: (
+        dir: string
+      ) => Promise<{ success: boolean; path?: string; error?: string; warning?: string }>
+      resetDataDir: () => Promise<{ success: boolean; path?: string; error?: string }>
     }
   }
 }

@@ -5,9 +5,10 @@ export default function Settings() {
   const [currentPath, setCurrentPath] = useState('')
   const [defaultDir, setDefaultDir] = useState('')
   const [loading, setLoading] = useState(false)
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
-    null
-  )
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error' | 'warning'
+    message: string
+  } | null>(null)
 
   useEffect(() => {
     loadPaths()
@@ -36,14 +37,24 @@ export default function Settings() {
         return
       }
 
+      // Cloud folders (Google Drive/OneDrive) may need to download the file first.
+      setFeedback({
+        type: 'warning',
+        message: 'Preparando a pasta... isso pode demorar um pouco em pastas da nuvem.'
+      })
+
       const setResult = await window.electronAPI.setDataDir(result.path)
       if (setResult.success && setResult.path) {
         setCurrentPath(setResult.path)
-        setFeedback({
-          type: 'success',
-          message:
-            'Local dos dados alterado com sucesso! Reinicie o aplicativo para carregar os dados do novo local.'
-        })
+        setFeedback(
+          setResult.warning
+            ? { type: 'warning', message: setResult.warning }
+            : {
+                type: 'success',
+                message:
+                  'Local dos dados alterado com sucesso! Reinicie o aplicativo para carregar os dados do novo local.'
+              }
+        )
       } else {
         setFeedback({
           type: 'error',
@@ -69,7 +80,10 @@ export default function Settings() {
             'Local dos dados restaurado para o padrão! Reinicie o aplicativo para carregar os dados.'
         })
       } else {
-        setFeedback({ type: 'error', message: 'Erro ao restaurar o local padrão.' })
+        setFeedback({
+          type: 'error',
+          message: result.error ?? 'Erro ao restaurar o local padrão.'
+        })
       }
     } catch (err) {
       setFeedback({ type: 'error', message: String(err) })
@@ -170,13 +184,16 @@ export default function Settings() {
           {feedback && (
             <div
               className={cn(
-                'rounded-xl px-4 py-3 text-xs font-medium border',
-                feedback.type === 'success'
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                  : 'bg-destructive/10 text-destructive border-destructive/20'
+                'rounded-xl px-4 py-3 text-xs font-medium border leading-relaxed',
+                feedback.type === 'success' &&
+                  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                feedback.type === 'warning' && 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                feedback.type === 'error' &&
+                  'bg-destructive/10 text-destructive border-destructive/20'
               )}
             >
-              {feedback.type === 'success' ? '✅' : '❌'} {feedback.message}
+              {feedback.type === 'success' ? '✅' : feedback.type === 'warning' ? '⏳' : '❌'}{' '}
+              {feedback.message}
             </div>
           )}
 
@@ -213,8 +230,25 @@ export default function Settings() {
               <li className="flex gap-2">
                 <span className="text-amber-400 mt-0.5">•</span>
                 <span>
-                  Após alterar, <strong className="text-amber-800 dark:text-amber-300/80">reinicie o aplicativo</strong>{' '}
+                  Após alterar,{' '}
+                  <strong className="text-amber-800 dark:text-amber-300/80">
+                    reinicie o aplicativo
+                  </strong>{' '}
                   para garantir que os dados carreguem corretamente.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-amber-400 mt-0.5">•</span>
+                <span>
+                  Em pastas do{' '}
+                  <strong className="text-foreground/80">Google Drive / OneDrive</strong>, escolha
+                  uma subpasta (ex.:{' '}
+                  <code className="font-mono text-primary/70 text-[10px]">
+                    Meu Drive/Financeiro
+                  </code>
+                  ) — a pasta raiz é somente leitura — e marque-a como{' '}
+                  <strong className="text-foreground/80">&quot;Disponível off-line&quot;</strong>{' '}
+                  para evitar demora ao abrir o arquivo.
                 </span>
               </li>
             </ul>
