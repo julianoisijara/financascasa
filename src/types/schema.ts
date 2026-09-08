@@ -3,6 +3,8 @@ export interface User {
   name: string
   originalName?: string
   color?: string
+  /** Foto de perfil (data URL) ou emoji escolhido para o participante */
+  avatar?: string
   createdAt: string
 }
 

@@ -3,6 +3,7 @@ import type { AppData, User } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
 import { useTheme } from '../../hooks/useTheme'
 import { useResizableColumn } from '../../hooks/useResizableColumn'
+import UserAvatar from '../ui/UserAvatar'
 
 interface Props {
   appData: AppData
@@ -194,16 +195,14 @@ export default function Sidebar({
                   className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-1.5 rounded-lg transition-all group cursor-pointer border border-transparent hover:border-white/5"
                   title="Clique para editar participante"
                 >
-                  <div
-                    className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm border flex-shrink-0"
-                    style={{
-                      backgroundColor: user.color ? `${user.color}20` : 'hsl(var(--primary) / 0.2)',
-                      borderColor: user.color ? `${user.color}30` : 'hsl(var(--primary) / 0.1)',
-                      color: user.color || 'hsl(var(--primary))'
-                    }}
-                  >
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    name={user.name}
+                    avatar={user.avatar}
+                    color={user.color}
+                    size={24}
+                    fontSize={10}
+                    className="shadow-sm"
+                  />
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <span
                       className="text-sm font-semibold truncate group-hover:text-primary transition-colors"

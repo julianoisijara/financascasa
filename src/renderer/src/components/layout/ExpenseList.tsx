@@ -4,6 +4,7 @@ import { formatCurrency, formatShortDate, getMonthName, cn } from '../../lib/uti
 import { useDeleteExpense } from '../../hooks/useFinanceData'
 import { calculateSettlements } from '../../lib/calculations'
 import ExpenseDetailModal from '../modals/ExpenseDetailModal'
+import UserAvatar from '../ui/UserAvatar'
 import {
   ViewModeSwitch,
   ExpenseListaView,
@@ -129,6 +130,7 @@ export default function ExpenseList({ appData, year, month }: Props) {
       date: formatShortDate(expense.createdAt),
       payerName,
       payerColor: payer?.color,
+      payerAvatar: payer?.avatar,
       payerInitial: payerName.charAt(0).toUpperCase(),
       isExtra: !!expense.debtToUserId,
       debtorName: debtor?.name,
@@ -271,26 +273,15 @@ export default function ExpenseList({ appData, year, month }: Props) {
                 )}
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div
-                    className={cn(
-                      'h-8 w-8 flex-shrink-0 rounded-full border flex items-center justify-center text-sm font-bold transition-colors'
-                    )}
-                    style={
-                      filterUserId === p.userId
-                        ? {
-                            backgroundColor: userColor || 'hsl(var(--primary))',
-                            borderColor: userColor || 'hsl(var(--primary))',
-                            color: '#ffffff'
-                          }
-                        : {
-                            backgroundColor: userColor ? `${userColor}20` : 'hsl(var(--primary) / 0.2)',
-                            borderColor: userColor ? `${userColor}30` : 'hsl(var(--primary) / 0.1)',
-                            color: userColor || 'hsl(var(--primary))'
-                          }
-                    }
-                  >
-                    {p.userName.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    name={p.userName}
+                    avatar={userObj?.avatar}
+                    color={userColor}
+                    size={32}
+                    fontSize={14}
+                    filled={filterUserId === p.userId}
+                    className="transition-colors"
+                  />
                   <div className="flex flex-col justify-center min-w-0 text-left">
                     <div className="flex items-center gap-1.5">
                       <span

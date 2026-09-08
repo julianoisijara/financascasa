@@ -58,6 +58,14 @@ export function generateYearData(): Record<string, { expenses: [] }> {
   return months
 }
 
+/**
+ * `User.avatar` guarda uma data URL (foto de perfil) ou o próprio emoji;
+ * vazio significa "usar a inicial do nome".
+ */
+export function isPhotoAvatar(avatar?: string): boolean {
+  return !!avatar && avatar.startsWith('data:')
+}
+
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ')
 }

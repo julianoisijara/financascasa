@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import type { AppData, Expense, User } from '@shared/schema'
 import { formatCurrency, getMonthName, cn } from '../../lib/utils'
+import UserAvatar from '../ui/UserAvatar'
 
 interface Props {
   appData: AppData
@@ -596,16 +597,14 @@ export default function Dashboard({ appData, onEditUser }: Props): React.JSX.Ele
                         className="w-full flex items-center gap-3 text-left hover:bg-white/5 p-2 rounded-lg transition-all group cursor-pointer border border-transparent hover:border-white/5"
                         title={onEditUser ? 'Clique para editar participante' : undefined}
                       >
-                        <div
-                          className="h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border"
-                          style={{
-                            backgroundColor: userColor ? `${userColor}20` : 'hsl(var(--primary) / 0.2)',
-                            borderColor: userColor ? `${userColor}30` : 'hsl(var(--primary) / 0.1)',
-                            color: userColor || 'hsl(var(--primary))'
-                          }}
-                        >
-                          {name.charAt(0).toUpperCase()}
-                        </div>
+                        <UserAvatar
+                          name={name}
+                          avatar={userObj?.avatar}
+                          color={userColor}
+                          size={32}
+                          fontSize={12}
+                          className="shadow-sm"
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between text-xs mb-1">
                             <div className="flex flex-col justify-center min-w-0">

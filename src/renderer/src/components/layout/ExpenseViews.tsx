@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { formatCurrency, cn } from '../../lib/utils'
+import UserAvatar from '../ui/UserAvatar'
 
 export type ViewMode = 'lista' | 'cartoes' | 'agrupada'
 
@@ -12,6 +13,7 @@ export interface ExpenseRow {
   date: string
   payerName: string
   payerColor?: string
+  payerAvatar?: string
   payerInitial: string
   isExtra: boolean
   debtorName?: string
@@ -157,22 +159,14 @@ function Avatar({
   size: number
   font: number
 }): ReactElement {
-  const color = row.payerColor
   return (
-    <div
-      className="flex-none rounded-full border flex items-center justify-center font-bold leading-none"
-      style={{
-        width: size,
-        height: size,
-        fontSize: font,
-        backgroundColor: color ? `${color}1F` : 'hsl(var(--primary) / 0.12)',
-        borderColor: color ? `${color}33` : 'hsl(var(--primary) / 0.2)',
-        color: color ?? 'hsl(var(--primary))'
-      }}
-      title={row.payerName}
-    >
-      {row.payerInitial}
-    </div>
+    <UserAvatar
+      name={row.payerName}
+      avatar={row.payerAvatar}
+      color={row.payerColor}
+      size={size}
+      fontSize={font}
+    />
   )
 }
 

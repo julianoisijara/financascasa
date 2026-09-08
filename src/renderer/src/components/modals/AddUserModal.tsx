@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppData, User } from '@shared/schema'
 import { useAddUser } from '../../hooks/useFinanceData'
 import { cn } from '../../lib/utils'
+import UserAvatar from '../ui/UserAvatar'
 
 const COLOR_PRESETS = [
   '#3b82f6', // Blue
@@ -72,16 +73,14 @@ export default function AddUserModal({ open, onClose, appData, onEditUser }: Pro
                   key={u.id}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm"
                 >
-                  <div
-                    className="h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold shadow-sm border flex-shrink-0"
-                    style={{
-                      backgroundColor: u.color ? `${u.color}20` : 'hsl(var(--primary) / 0.2)',
-                      borderColor: u.color ? `${u.color}30` : 'hsl(var(--primary) / 0.1)',
-                      color: u.color || 'hsl(var(--primary))'
-                    }}
-                  >
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    name={u.name}
+                    avatar={u.avatar}
+                    color={u.color}
+                    size={20}
+                    fontSize={11}
+                    className="shadow-sm"
+                  />
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <span className="font-semibold" style={{ color: u.color }}>
                       {u.name}

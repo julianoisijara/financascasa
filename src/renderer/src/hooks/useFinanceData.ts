@@ -270,11 +270,13 @@ export function useEditUser() {
     mutationFn: async ({
       userId,
       name,
-      color
+      color,
+      avatar
     }: {
       userId: string
       name: string
       color?: string
+      avatar?: string
     }) => {
       const current = queryClient.getQueryData<AppData>(QUERY_KEY)
       if (!current) throw new Error('No data loaded')
@@ -286,7 +288,8 @@ export function useEditUser() {
             ...u,
             name,
             originalName,
-            color
+            color,
+            avatar
           }
         }
         return u
