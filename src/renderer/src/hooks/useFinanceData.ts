@@ -59,6 +59,13 @@ declare global {
         clientId: string,
         clientSecret?: string
       ) => Promise<{ success: boolean; error?: string }>
+      importDriveCredentialsFile: () => Promise<{
+        success: boolean
+        canceled?: boolean
+        clientId?: string
+        warning?: string
+        error?: string
+      }>
       cancelDriveConnect: () => Promise<{ success: boolean }>
       listDriveFolders: (
         parentId?: string

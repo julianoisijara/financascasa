@@ -35,7 +35,7 @@ $ npm run build:linux
 
 ## Salvar no Google Drive
 
-O app pode guardar o `finance-data.json` **neste computador** (padrão) ou **no Google Drive** da sua conta, via API oficial. A escolha fica em **Configurações → Onde salvar os dados**.
+O app pode guardar o `finance-data.json` **neste computador** (padrão) ou **no Google Drive** da sua conta, via API oficial. A escolha fica em **Configurações → Onde salvar os dados**. O app abre sempre sem pedir login: a autenticação no Google só é solicitada no momento em que você escolhe salvar no Drive. Se a conta deixar de estar conectada (ou o instalador vier sem credenciais), o app volta automaticamente a usar os dados locais até você reconectar.
 
 - No Drive, o arquivo fica por padrão em `Meu Drive/FinancasCasa/finance-data.json`. Em **Configurações → Conta Google Drive → Escolher pasta ou arquivo** você navega por **Meu Drive** e por **Compartilhados comigo**, cria pastas e escolhe onde guardar. Ao trocar de pasta o arquivo é movido (ou copiado, se não puder ser movido); se a pasta escolhida já tiver um `finance-data.json`, ele passa a ser usado. Também dá para marcar diretamente um arquivo `.json` compartilhado por outra pessoa: assim duas contas Google usam o mesmo arquivo, desde que o dono conceda permissão de edição.
 - O app pede o escopo completo do Drive (`auth/drive`), necessário para listar e usar pastas que ele não criou. Como o app fica em modo "teste" no Google Cloud, a tela de consentimento mostra um aviso de app não verificado; clique em _Avançado → Acessar_.
@@ -68,6 +68,8 @@ MAIN_VITE_GOOGLE_CLIENT_SECRET=GOCSPX-...
 ```
 
 O `.env` é ignorado pelo git e os valores são embutidos no processo principal durante `npm run dev` / `npm run build:*`.
+
+- **No GitHub Actions** (instaladores publicados nas Releases): cadastre os secrets `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` em _Settings → Secrets and variables → Actions_ do repositório. O workflow os injeta no build. Sem eles, o instalador sai sem credenciais e o app pede o Client ID na tela de login.
 
 ### 3. Conectar e ativar
 

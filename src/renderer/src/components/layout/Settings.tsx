@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '../../lib/utils'
 import { useDriveStatus, type StorageMode } from '../../hooks/useFinanceData'
 import GoogleCredentialsForm from '../settings/GoogleCredentialsForm'
-import { GoogleIcon } from '../auth/LoginScreen'
+import GoogleIcon from '../ui/GoogleIcon'
 import DriveFolderPickerModal from '../modals/DriveFolderPickerModal'
 import type { DriveFolder } from '../../hooks/useFinanceData'
 
@@ -45,12 +45,29 @@ export default function Settings() {
 
   async function handleSetMode(mode: StorageMode) {
     if (!drive || drive.mode === mode) return
+    // Só aqui o login do Google é pedido: ao escolher salvar na nuvem.
     if (mode === 'gdrive' && !drive.connected) {
+      if (!drive.configured) {
+        setFeedback({
+          type: 'warning',
+          message:
+            'Informe o Client ID do Google Cloud abaixo (Credenciais do Google Cloud) para poder conectar sua conta.'
+        })
+        return
+      }
+      setLoading(true)
       setFeedback({
         type: 'warning',
-        message: 'Conecte sua conta Google abaixo antes de ativar o armazenamento na nuvem.'
+        message: 'Abrimos o navegador para você entrar com o Google. Volte aqui quando terminar.'
       })
-      return
+      const login = await window.electronAPI.login()
+      if (!login.success) {
+        setLoading(false)
+        setFeedback({ type: 'error', message: login.error ?? 'Falha ao conectar.' })
+        return
+      }
+      setLoading(false)
+      await refetchDrive()
     }
 
     setLoading(true)

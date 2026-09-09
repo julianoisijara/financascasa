@@ -54,6 +54,10 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           CSC_LINK: ''
           CSC_KEY_PASSWORD: ''
+          # Credenciais OAuth do Google embutidas no processo principal.
+          # Cadastre em Settings > Secrets and variables > Actions.
+          MAIN_VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          MAIN_VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: npm run ${{ matrix.build_script }}
 
       - name: Upload Artifacts

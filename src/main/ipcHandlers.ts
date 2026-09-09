@@ -24,6 +24,17 @@ import * as gdrive from './googleDrive'
 
 const DRIVE_BACKUP_FILE_NAME = 'finance-data.gdrive-backup.json'
 
+/**
+ * Modo realmente em uso. "gdrive" só vale com credenciais e conta conectada;
+ * caso contrário o app abre com os dados locais, sem pedir login, e a nuvem
+ * volta a valer assim que o usuário conectar em Configurações.
+ */
+function getEffectiveStorageMode(): StorageMode {
+  if (getStorageMode() !== 'gdrive') return 'local'
+  const status = gdrive.getStatus()
+  return status.configured && status.connected ? 'gdrive' : 'local'
+}
+
 /** Cópia local do último conteúdo sincronizado com o Drive (somente segurança). */
 function getDriveBackupPath(): string {
   return path.join(app.getPath('userData'), DRIVE_BACKUP_FILE_NAME)
@@ -103,20 +114,24 @@ export function registerIpcHandlers(): void {
     return { success: true }
   })
 
-  /** Local nunca precisa de login; nuvem precisa de uma conta conectada. */
+  /**
+   * Local nunca precisa de login; nuvem precisa de credenciais e de uma conta
+   * conectada. Um build sem Client ID (ex.: instalador gerado sem .env) cai na
+   * tela de login, que permite informar as credenciais ou voltar ao modo local.
+   */
   ipcMain.handle('auth:check', async () => {
-    const mode = getStorageMode()
-    return { authenticated: mode === 'local' || gdrive.isConnected() }
+    // O app nunca bloqueia na abertura; o login só é pedido ao ativar o Drive.
+    return { authenticated: true }
   })
 
   // ─── Dados (roteados pelo modo de armazenamento) ───
   ipcMain.handle('drive:read', async () => {
-    return getStorageMode() === 'gdrive' ? readDrive() : readLocal()
+    return getEffectiveStorageMode() === 'gdrive' ? readDrive() : readLocal()
   })
 
   ipcMain.handle('drive:write', async (_event, data: AppData) => {
     const contents = JSON.stringify(data, null, 2)
-    if (getStorageMode() === 'gdrive') {
+    if (getEffectiveStorageMode() === 'gdrive') {
       try {
         await gdrive.writeDataFile(contents)
         await writeFileSafe(getDriveBackupPath(), contents).catch(() => undefined)
@@ -144,7 +159,7 @@ export function registerIpcHandlers(): void {
   // ─── Google Drive ───
 
   ipcMain.handle('gdrive:status', () => {
-    return { success: true, mode: getStorageMode(), ...gdrive.getStatus() }
+    return { success: true, mode: getEffectiveStorageMode(), ...gdrive.getStatus() }
   })
 
   ipcMain.handle('gdrive:setCredentials', (_event, clientId: string, clientSecret?: string) => {
@@ -185,6 +200,53 @@ export function registerIpcHandlers(): void {
       return { success: true, ...(await gdrive.setFolder(folderId)) }
     } catch (err) {
       return { success: false, error: gdrive.toDriveError(err).message }
+    }
+  })
+
+  /**
+   * Importa o JSON de credenciais baixado do Google Cloud
+   * (client_secret_*.json, com a chave "installed" ou "web"). Só lê o arquivo.
+   */
+  ipcMain.handle('gdrive:importCredentialsFile', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Escolha o arquivo de credenciais do Google Cloud',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      buttonLabel: 'Carregar'
+    })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, canceled: true }
+    }
+
+    try {
+      const raw = await fsp.readFile(result.filePaths[0], 'utf-8')
+      const parsed = JSON.parse(raw) as Record<
+        string,
+        { client_id?: string; client_secret?: string }
+      >
+      const kind = parsed.installed ? 'installed' : parsed.web ? 'web' : null
+      const creds = kind ? parsed[kind] : null
+      if (!creds?.client_id) {
+        return {
+          success: false,
+          error:
+            'Este arquivo não parece ser um JSON de credenciais OAuth do Google Cloud (esperado um objeto "installed" com "client_id").'
+        }
+      }
+      gdrive.setCredentials(creds.client_id, creds.client_secret)
+      return {
+        success: true,
+        clientId: creds.client_id,
+        warning:
+          kind === 'web'
+            ? 'O arquivo é de um cliente do tipo "Aplicativo da Web". Prefira criar um do tipo "Aplicativo para computador" para o login funcionar.'
+            : undefined
+      }
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        return { success: false, error: 'O arquivo não é um JSON válido.' }
+      }
+      return { success: false, error: describeFsError(err) }
     }
   })
 

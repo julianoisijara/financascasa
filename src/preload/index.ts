@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDriveStatus: () => ipcRenderer.invoke('gdrive:status'),
   setDriveCredentials: (clientId: string, clientSecret?: string) =>
     ipcRenderer.invoke('gdrive:setCredentials', clientId, clientSecret),
+  importDriveCredentialsFile: () => ipcRenderer.invoke('gdrive:importCredentialsFile'),
   cancelDriveConnect: () => ipcRenderer.invoke('gdrive:cancelConnect'),
   listDriveFolders: (parentId?: string) => ipcRenderer.invoke('gdrive:listFolders', parentId),
   createDriveFolder: (parentId: string, name: string) =>

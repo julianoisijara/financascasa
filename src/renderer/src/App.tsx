@@ -1,15 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  useAuthStatus,
-  useDriveStatus,
-  useFinanceData,
-  useReadStatus,
-  useSaveData
-} from './hooks/useFinanceData'
+import { useDriveStatus, useFinanceData, useReadStatus, useSaveData } from './hooks/useFinanceData'
 import OnboardingScreen from './components/onboarding/OnboardingScreen'
 import MainLayout from './components/layout/MainLayout'
-import LoginScreen from './components/auth/LoginScreen'
 import type { AppData, User } from '@shared/schema'
 import { generateYearData } from './lib/utils'
 import { v4 as uuidv4 } from 'uuid'
@@ -22,7 +15,6 @@ import { SAVE_ERROR_EVENT } from './lib/events'
 export default function App() {
   useTheme() // Initialize theme
   const queryClient = useQueryClient()
-  const { data: isAuthenticated, isLoading: authLoading } = useAuthStatus()
   const { data: driveStatus } = useDriveStatus()
   const {
     data: appData,
@@ -89,14 +81,6 @@ export default function App() {
     await window.electronAPI.setStorageMode('local')
     await queryClient.invalidateQueries()
     window.location.reload()
-  }
-
-  if (authLoading) {
-    return <LoadingScreen message="Verificando conta..." />
-  }
-
-  if (!isAuthenticated) {
-    return <LoginScreen />
   }
 
   const isDrive = driveStatus?.mode === 'gdrive'
